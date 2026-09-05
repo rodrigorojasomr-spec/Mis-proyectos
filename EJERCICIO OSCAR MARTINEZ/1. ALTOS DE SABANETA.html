@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Altos de Sabaneta - Registro de Ingresos y Egresos</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 0;
+    color: #222;
+  }
+  header {
+    background: #2c5f2d;
+    color: #fff;
+    padding: 14px 20px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+  header p {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: #dfe;
+  }
+  .tabs {
+    display: flex;
+    background: #1f451f;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    color: #cfe8cf;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .tab-btn.active {
+    background: #f2f2f2;
+    color: #1f451f;
+    font-weight: bold;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  .panel {
+    display: none;
+  }
+  .panel.active {
+    display: block;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 4px;
+    margin-top: 10px;
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #999;
+    border-radius: 4px;
+  }
+  input[readonly] {
+    background: #eee;
+  }
+  .owner-list {
+    list-style: none;
+    margin: 8px 0 0 0;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  .owner-list li {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .owner-list li:hover {
+    background: #eaf5ea;
+  }
+  .owner-list li.selected {
+    background: #cfe8cf;
+    font-weight: bold;
+  }
+  .selected-owner-title {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  table.months {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12px;
+  }
+  table.months th, table.months td {
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 6px 2px;
+  }
+  table.months th {
+    background: #f0f0f0;
+  }
+  .estado-pagado { background: #d7f0d7; color: #1f6b1f; font-weight: bold; }
+  .estado-pendiente { background: #f8d7d7; color: #a11; font-weight: bold; }
+  .estado-novencido { background: #f5f5f5; color: #999; }
+  .resumen {
+    font-size: 14px;
+    margin: 8px 0;
+  }
+  .valor-box {
+    background: #eef6ee;
+    border: 1px solid #b6d9b6;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .valor-total {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1f6b1f;
+  }
+  button.action {
+    margin-top: 14px;
+    background: #2c5f2d;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    width: 100%;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button.action:hover {
+    background: #1f451f;
+  }
+  button.action:disabled {
+    background: #999;
+    cursor: not-allowed;
+  }
+  .msg-ok {
+    margin-top: 10px;
+    padding: 8px;
+    background: #d7f0d7;
+    border: 1px solid #8fc98f;
+    border-radius: 4px;
+    color: #1f6b1f;
+    font-size: 13px;
+  }
+  .historial {
+    max-height: 260px;
+    overflow-y: auto;
+    font-size: 13px;
+  }
+  .historial table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .historial th, .historial td {
+    border-bottom: 1px solid #ddd;
+    padding: 6px 4px;
+    text-align: left;
+  }
+  .historial th {
+    background: #f0f0f0;
+    position: sticky;
+    top: 0;
+  }
+  h2 {
+    font-size: 16px;
+    margin-top: 0;
+  }
+  .hint {
+    font-size: 12px;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Altos de Sabaneta</h1>
+  <p>Registro de ingresos (cuotas de administración) y egresos (gastos)</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabBtnPropietarios" onclick="mostrarTab('propietarios')">Propietarios (Ingresos)</button>
+  <button class="tab-btn" id="tabBtnAdmin" onclick="mostrarTab('admin')">Administración (Egresos)</button>
+</div>
+
+<div class="container">
+
+  <!-- PANEL PROPIETARIOS -->
+  <div class="panel active" id="panelPropietarios">
+
+    <div class="card">
+      <h2>Buscar propietario</h2>
+      <label for="buscarPropietario">Nombre o número de finca</label>
+      <input type="text" id="buscarPropietario" placeholder="Ej: Oscar Martinez o 07" oninput="filtrarPropietarios()">
+      <ul class="owner-list" id="listaPropietarios"></ul>
+    </div>
+
+    <div class="card" id="cardPropietarioSeleccionado" style="display:none;">
+      <div class="selected-owner-title" id="tituloPropietario"></div>
+
+      <table class="months" id="tablaMeses"></table>
+
+      <div class="resumen" id="resumenMeses"></div>
+
+      <div id="formPago">
+        <label for="selectMes">Mes a registrar el pago</label>
+        <select id="selectMes" onchange="actualizarValorCuota()"></select>
+
+        <div class="valor-box" id="cajaValor"></div>
+
+        <label for="fechaRegistroIngreso">Fecha de registro</label>
+        <input type="text" id="fechaRegistroIngreso" readonly>
+
+        <button class="action" id="btnCobrar" onclick="registrarIngreso()">Cobrar</button>
+        <div class="msg-ok" id="msgIngreso" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Ingresos registrados</h2>
+      <div class="historial" id="historialIngresos"></div>
+    </div>
+
+  </div>
+
+  <!-- PANEL ADMINISTRACION -->
+  <div class="panel" id="panelAdmin">
+
+    <div class="card">
+      <h2>Registrar un gasto</h2>
+
+      <label for="fechaRegistroGasto">Fecha de registro</label>
+      <input type="text" id="fechaRegistroGasto" readonly>
+
+      <label for="conceptoGasto">Concepto</label>
+      <input type="text" id="conceptoGasto" placeholder="Ej: Pago servicios públicos">
+
+      <label for="categoriaGasto">Categoría</label>
+      <select id="categoriaGasto"></select>
+
+      <label for="valorGasto">Valor</label>
+      <input type="number" id="valorGasto" min="0" step="1" placeholder="0">
+
+      <div class="valor-box" id="cajaValorGasto" style="display:none;"></div>
+
+      <button class="action" id="btnGuardarGasto" onclick="registrarEgreso()">Guardar Gasto</button>
+      <div class="msg-ok" id="msgEgreso" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Egresos registrados</h2>
+      <div class="historial" id="historialEgresos"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* ===================== DATOS TOMADOS DE "Lo que entrego Altos de Sabaneta.xlsx" - hoja CUOTAS 2026 ===================== */
+const ANIO = 2026;
+const VALOR_CUOTA_BASE = 60000;
+const RECARGO_POR_DIA = 1000;
+const DIA_LIMITE_PAGO = 5;
+
+const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+
+const PROPIETARIOS_BASE = [
+ {"finca":"01","nombre":"FRANK MONTOYA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"02","nombre":"ALEJANDRO LOPEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"03","nombre":"LETICIA AGUDELO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":6000}},
+ {"finca":"04","nombre":"NELSON ARAQUE","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"05","nombre":"JAMES SANCHEZ","meses":{"ENERO":60000,"FEBRERO":61000,"MARZO":65000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":63000}},
+ {"finca":"06","nombre":"JUAN GUILLERMO POSADA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000}},
+ {"finca":"07","nombre":"OSCAR MARTINEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000}},
+ {"finca":"08","nombre":"HENRRY FERRARO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"09","nombre":"ESTELA CORREA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"10","nombre":"YAIR ARLEY GIRALDO","meses":{"ENERO":91000,"FEBRERO":76000,"MARZO":60000,"ABRIL":60000,"MAYO":63000,"JUNIO":70000,"AGOSTO":63000}},
+ {"finca":"11","nombre":"JUDY TAPIAS GIL","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"12","nombre":"RODRIGO NOVOA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000}},
+ {"finca":"13","nombre":"ALEJANDRO CARMONA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":-90000,"MAYO":-91000,"JUNIO":-90000,"JULIO":-91000,"AGOSTO":-80000}},
+ {"finca":"14","nombre":"LA TAMARA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},
+ {"finca":"15","nombre":"FINCA NUEVA","meses":{"ENERO":60000,"FEBRERO":60000}}
+];
+
+const CATEGORIAS = [
+ "SCIOS PUBLICOS E INTERNET",
+ "JARDINERIA Y ASEO",
+ "DONACIONES",
+ "MANTENIMIENTO PORTON",
+ "ILUMINACION",
+ "CAMARAS SEGURIDAD",
+ "DEUDAS ADMON",
+ "PROYECTO RIELES 2025"
+];
+
+/* ===================== ALMACENAMIENTO LOCAL ===================== */
+const KEY_INGRESOS = "altos_sabaneta_ingresos_v1";
+const KEY_EGRESOS = "altos_sabaneta_egresos_v1";
+
+function cargarIngresos() {
+  try { return JSON.parse(localStorage.getItem(KEY_INGRESOS)) || []; }
+  catch (e) { return []; }
+}
+function guardarIngresos(lista) {
+  localStorage.setItem(KEY_INGRESOS, JSON.stringify(lista));
+}
+function cargarEgresos() {
+  try { return JSON.parse(localStorage.getItem(KEY_EGRESOS)) || []; }
+  catch (e) { return []; }
+}
+function guardarEgresos(lista) {
+  localStorage.setItem(KEY_EGRESOS, JSON.stringify(lista));
+}
+
+/* ===================== UTILIDADES ===================== */
+function formatoMoneda(valor) {
+  return "$" + Number(valor).toLocaleString("es-CO");
+}
+function hoy() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function formatoFecha(d) {
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return dd + "/" + mm + "/" + d.getFullYear();
+}
+function mesActualIndice() {
+  const d = new Date();
+  if (d.getFullYear() > ANIO) return 12;
+  if (d.getFullYear() < ANIO) return 0;
+  return d.getMonth() + 1; // 1..12
+}
+
+/* Devuelve el estado de meses de un propietario combinando datos base del Excel + pagos registrados en la app */
+function estadoPropietario(finca) {
+  const base = PROPIETARIOS_BASE.find(p => p.finca === finca);
+  const estado = {};
+  MESES.forEach(m => { estado[m] = base.meses[m] !== undefined ? base.meses[m] : null; });
+  const ingresos = cargarIngresos().filter(i => i.finca === finca && i.anio === ANIO);
+  ingresos.forEach(i => { estado[i.mes] = i.valorTotal; });
+  return estado;
+}
+
+/* ===================== TABS ===================== */
+function mostrarTab(tab) {
+  document.getElementById('panelPropietarios').classList.toggle('active', tab === 'propietarios');
+  document.getElementById('panelAdmin').classList.toggle('active', tab === 'admin');
+  document.getElementById('tabBtnPropietarios').classList.toggle('active', tab === 'propietarios');
+  document.getElementById('tabBtnAdmin').classList.toggle('active', tab === 'admin');
+}
+
+/* ===================== PROPIETARIOS: BUSQUEDA ===================== */
+let propietarioSeleccionado = null;
+
+function filtrarPropietarios() {
+  const texto = document.getElementById('buscarPropietario').value.trim().toLowerCase();
+  const lista = document.getElementById('listaPropietarios');
+  lista.innerHTML = "";
+  if (texto === "") { return; }
+  const resultados = PROPIETARIOS_BASE.filter(p =>
+    p.nombre.toLowerCase().includes(texto) || p.finca.includes(texto)
+  );
+  resultados.forEach(p => {
+    const li = document.createElement('li');
+    li.textContent = "Finca " + p.finca + " - " + p.nombre;
+    li.onclick = () => seleccionarPropietario(p.finca);
+    lista.appendChild(li);
+  });
+  if (resultados.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = "Sin resultados";
+    li.style.cursor = "default";
+    lista.appendChild(li);
+  }
+}
+
+function seleccionarPropietario(finca) {
+  propietarioSeleccionado = finca;
+  document.getElementById('buscarPropietario').value = "";
+  document.getElementById('listaPropietarios').innerHTML = "";
+  document.getElementById('cardPropietarioSeleccionado').style.display = "block";
+  renderPropietario();
+}
+
+function renderPropietario() {
+  const base = PROPIETARIOS_BASE.find(p => p.finca === propietarioSeleccionado);
+  document.getElementById('tituloPropietario').textContent = "Finca " + base.finca + " - " + base.nombre;
+
+  const estado = estadoPropietario(propietarioSeleccionado);
+  const mesActual = mesActualIndice();
+
+  // Tabla de meses
+  let html = "<tr>";
+  MESES.forEach(m => html += "<th>" + m.substring(0,3) + "</th>");
+  html += "</tr><tr>";
+  MESES.forEach((m, idx) => {
+    const numMes = idx + 1;
+    const pagado = estado[m] !== null && estado[m] !== undefined;
+    let clase, texto;
+    if (pagado) {
+      clase = "estado-pagado";
+      texto = "OK";
+    } else if (numMes <= mesActual) {
+      clase = "estado-pendiente";
+      texto = "Falta";
+    } else {
+      clase = "estado-novencido";
+      texto = "-";
+    }
+    html += "<td class='" + clase + "'>" + texto + "</td>";
+  });
+  html += "</tr>";
+  document.getElementById('tablaMeses').innerHTML = html;
+
+  // Resumen de meses faltantes (hasta el mes actual)
+  const mesesFaltantes = MESES.filter((m, idx) => (idx + 1) <= mesActual && (estado[m] === null || estado[m] === undefined));
+  document.getElementById('resumenMeses').innerHTML =
+    "<strong>Meses faltantes hasta la fecha (" + MESES[mesActual-1] + " " + ANIO + "):</strong> " +
+    (mesesFaltantes.length === 0 ? "Ninguno, al día." : mesesFaltantes.length + " (" + mesesFaltantes.join(", ") + ")");
+
+  // Selector de mes a pagar: todos los meses que aún no tienen pago
+  const selectMes = document.getElementById('selectMes');
+  selectMes.innerHTML = "";
+  const mesesPendientesTodos = MESES.filter(m => estado[m] === null || estado[m] === undefined);
+  if (mesesPendientesTodos.length === 0) {
+    const opt = document.createElement('option');
+    opt.textContent = "No hay meses pendientes";
+    opt.value = "";
+    selectMes.appendChild(opt);
+    document.getElementById('btnCobrar').disabled = true;
+  } else {
+    mesesPendientesTodos.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      selectMes.appendChild(opt);
+    });
+    document.getElementById('btnCobrar').disabled = false;
+  }
+
+  document.getElementById('fechaRegistroIngreso').value = formatoFecha(hoy());
+  document.getElementById('msgIngreso').style.display = "none";
+  actualizarValorCuota();
+}
+
+function calcularValorCuota(mesNombre, fechaRegistro) {
+  const idxMes = MESES.indexOf(mesNombre);
+  const fechaLimite = new Date(ANIO, idxMes, DIA_LIMITE_PAGO);
+  let diasRetraso = Math.floor((fechaRegistro - fechaLimite) / 86400000);
+  if (diasRetraso < 0) diasRetraso = 0;
+  const recargo = diasRetraso * RECARGO_POR_DIA;
+  return { base: VALOR_CUOTA_BASE, dias: diasRetraso, recargo: recargo, total: VALOR_CUOTA_BASE + recargo };
+}
+
+function actualizarValorCuota() {
+  const mes = document.getElementById('selectMes').value;
+  const caja = document.getElementById('cajaValor');
+  if (!mes) {
+    caja.innerHTML = "";
+    return;
+  }
+  const calculo = calcularValorCuota(mes, hoy());
+  let html = "Cuota mensual: " + formatoMoneda(calculo.base);
+  if (calculo.dias > 0) {
+    html += "<br>Recargo por mora (" + calculo.dias + " día(s) después del " + DIA_LIMITE_PAGO + " de " + mes + "): " + formatoMoneda(calculo.recargo);
+  } else {
+    html += "<br>Sin recargo por mora.";
+  }
+  html += "<br><span class='valor-total'>Total a cobrar: " + formatoMoneda(calculo.total) + "</span>";
+  caja.innerHTML = html;
+}
+
+function registrarIngreso() {
+  const mes = document.getElementById('selectMes').value;
+  if (!mes || !propietarioSeleccionado) return;
+  const base = PROPIETARIOS_BASE.find(p => p.finca === propietarioSeleccionado);
+  const calculo = calcularValorCuota(mes, hoy());
+
+  const registro = {
+    finca: propietarioSeleccionado,
+    propietario: base.nombre,
+    anio: ANIO,
+    mes: mes,
+    valorBase: calculo.base,
+    diasMora: calculo.dias,
+    recargo: calculo.recargo,
+    valorTotal: calculo.total,
+    fechaRegistro: formatoFecha(hoy())
+  };
+
+  const lista = cargarIngresos();
+  lista.push(registro);
+  guardarIngresos(lista);
+
+  document.getElementById('msgIngreso').style.display = "block";
+  document.getElementById('msgIngreso').textContent = "Cuota de " + mes + " registrada por " + formatoMoneda(calculo.total) + ".";
+
+  renderPropietario();
+  renderHistorialIngresos();
+}
+
+/* ===================== HISTORIAL INGRESOS ===================== */
+function renderHistorialIngresos() {
+  const lista = cargarIngresos().slice().reverse();
+  const cont = document.getElementById('historialIngresos');
+  if (lista.length === 0) {
+    cont.innerHTML = "<p class='hint'>Aún no se han registrado ingresos.</p>";
+    return;
+  }
+  let html = "<table><tr><th>Fecha registro</th><th>Finca</th><th>Propietario</th><th>Mes</th><th>Valor</th></tr>";
+  lista.forEach(i => {
+    html += "<tr><td>" + i.fechaRegistro + "</td><td>" + i.finca + "</td><td>" + i.propietario + "</td><td>" + i.mes + "</td><td>" + formatoMoneda(i.valorTotal) + "</td></tr>";
+  });
+  html += "</table>";
+  cont.innerHTML = html;
+}
+
+/* ===================== ADMINISTRACION: EGRESOS ===================== */
+function inicializarCategorias() {
+  const sel = document.getElementById('categoriaGasto');
+  sel.innerHTML = "";
+  CATEGORIAS.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function registrarEgreso() {
+  const concepto = document.getElementById('conceptoGasto').value.trim();
+  const categoria = document.getElementById('categoriaGasto').value;
+  const valor = Number(document.getElementById('valorGasto').value);
+  const msg = document.getElementById('msgEgreso');
+
+  if (concepto === "" || !valor || valor <= 0) {
+    msg.style.display = "block";
+    msg.textContent = "Por favor completa el concepto y un valor mayor a 0.";
+    msg.style.background = "#f8d7d7";
+    msg.style.borderColor = "#e3a1a1";
+    msg.style.color = "#a11";
+    return;
+  }
+
+  const registro = {
+    fecha: formatoFecha(hoy()),
+    concepto: concepto,
+    categoria: categoria,
+    valor: valor
+  };
+
+  const lista = cargarEgresos();
+  lista.push(registro);
+  guardarEgresos(lista);
+
+  msg.style.display = "block";
+  msg.style.background = "#d7f0d7";
+  msg.style.borderColor = "#8fc98f";
+  msg.style.color = "#1f6b1f";
+  msg.textContent = "Gasto registrado: " + concepto + " por " + formatoMoneda(valor) + ".";
+
+  document.getElementById('conceptoGasto').value = "";
+  document.getElementById('valorGasto').value = "";
+
+  renderHistorialEgresos();
+}
+
+function renderHistorialEgresos() {
+  const lista = cargarEgresos().slice().reverse();
+  const cont = document.getElementById('historialEgresos');
+  if (lista.length === 0) {
+    cont.innerHTML = "<p class='hint'>Aún no se han registrado egresos.</p>";
+    return;
+  }
+  let html = "<table><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Valor</th></tr>";
+  lista.forEach(e => {
+    html += "<tr><td>" + e.fecha + "</td><td>" + e.concepto + "</td><td>" + e.categoria + "</td><td>" + formatoMoneda(e.valor) + "</td></tr>";
+  });
+  html += "</table>";
+  cont.innerHTML = html;
+}
+
+/* ===================== INICIALIZACION ===================== */
+function iniciar() {
+  document.getElementById('fechaRegistroGasto').value = formatoFecha(hoy());
+  inicializarCategorias();
+  renderHistorialIngresos();
+  renderHistorialEgresos();
+}
+iniciar();
+</script>
+
+</body>
+</html>
