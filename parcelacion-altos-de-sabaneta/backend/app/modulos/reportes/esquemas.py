@@ -43,4 +43,5 @@ class CuotaVencida(BaseModel):
     monto: Decimal
     fecha_vencimiento: date
     dias_vencida: int
+    recargo_por_mora: Decimal
     saldo_pendiente: Decimal

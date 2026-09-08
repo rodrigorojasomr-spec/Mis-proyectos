@@ -124,6 +124,9 @@ export interface Cuota {
   monto: string;
   fecha_vencimiento: string;
   estado: EstadoCuota;
+  dias_mora: number;
+  recargo_por_mora: string;
+  monto_con_recargo: string;
   saldo_pendiente: string;
   pagos: Pago[];
 }
@@ -242,6 +245,7 @@ export interface CuotaVencida {
   monto: string;
   fecha_vencimiento: string;
   dias_vencida: number;
+  recargo_por_mora: string;
   saldo_pendiente: string;
 }
 

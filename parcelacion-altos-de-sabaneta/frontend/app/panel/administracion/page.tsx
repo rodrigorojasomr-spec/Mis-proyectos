@@ -269,6 +269,7 @@ export default function PaginaAdministracion() {
                   <th>Concepto</th>
                   <th>Monto</th>
                   <th>Vence</th>
+                  <th>Recargo por mora</th>
                   <th>Saldo pendiente</th>
                   <th>Estado</th>
                 </tr>
@@ -279,6 +280,11 @@ export default function PaginaAdministracion() {
                     <td>{cuota.concepto}</td>
                     <td>${cuota.monto}</td>
                     <td>{cuota.fecha_vencimiento}</td>
+                    <td>
+                      {Number(cuota.recargo_por_mora) > 0
+                        ? `$${cuota.recargo_por_mora} (${cuota.dias_mora} d)`
+                        : "—"}
+                    </td>
                     <td>${cuota.saldo_pendiente}</td>
                     <td>
                       <span className={`insignia-estado ${cuota.estado}`}>{cuota.estado}</span>
@@ -287,7 +293,7 @@ export default function PaginaAdministracion() {
                 ))}
                 {cuotasDeUnidad.length === 0 && (
                   <tr>
-                    <td colSpan={5}>Esta unidad no tiene cuotas registradas.</td>
+                    <td colSpan={6}>Esta unidad no tiene cuotas registradas.</td>
                   </tr>
                 )}
               </tbody>

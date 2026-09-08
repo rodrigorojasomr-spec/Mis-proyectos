@@ -162,6 +162,7 @@ export default function PaginaReportes() {
                 <th>Concepto</th>
                 <th>Venció</th>
                 <th>Días vencida</th>
+                <th>Recargo por mora</th>
                 <th>Saldo pendiente</th>
               </tr>
             </thead>
@@ -173,12 +174,13 @@ export default function PaginaReportes() {
                   <td>{fila.concepto}</td>
                   <td>{fila.fecha_vencimiento}</td>
                   <td>{fila.dias_vencida}</td>
+                  <td>${fila.recargo_por_mora}</td>
                   <td>${fila.saldo_pendiente}</td>
                 </tr>
               ))}
               {vencidas.length === 0 && (
                 <tr>
-                  <td colSpan={6}>No hay cuotas vencidas.</td>
+                  <td colSpan={7}>No hay cuotas vencidas.</td>
                 </tr>
               )}
             </tbody>

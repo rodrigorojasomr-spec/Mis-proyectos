@@ -122,6 +122,7 @@ export default function PaginaMisCuotas() {
                     <th>Concepto</th>
                     <th>Monto</th>
                     <th>Vence</th>
+                    <th>Recargo por mora</th>
                     <th>Saldo pendiente</th>
                     <th>Estado</th>
                     <th></th>
@@ -133,6 +134,16 @@ export default function PaginaMisCuotas() {
                       <td>{cuota.concepto}</td>
                       <td>${cuota.monto}</td>
                       <td>{cuota.fecha_vencimiento}</td>
+                      <td>
+                        {Number(cuota.recargo_por_mora) > 0 ? (
+                          <span style={{ color: "var(--color-error)" }}>
+                            ${cuota.recargo_por_mora} ({cuota.dias_mora} día
+                            {cuota.dias_mora === 1 ? "" : "s"})
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td>${cuota.saldo_pendiente}</td>
                       <td>
                         <span className={`insignia-estado ${cuota.estado}`}>{cuota.estado}</span>
@@ -152,7 +163,7 @@ export default function PaginaMisCuotas() {
                   ))}
                   {cuotas.length === 0 && (
                     <tr>
-                      <td colSpan={6}>No tienes cuotas registradas todavía.</td>
+                      <td colSpan={7}>No tienes cuotas registradas todavía.</td>
                     </tr>
                   )}
                 </tbody>
@@ -162,6 +173,12 @@ export default function PaginaMisCuotas() {
             {cuotaSeleccionada && (
               <div className="seccion">
                 <h2>Registrar pago — {cuotaSeleccionada.concepto}</h2>
+                {Number(cuotaSeleccionada.recargo_por_mora) > 0 && (
+                  <p style={{ color: "var(--color-error)", fontSize: "0.9rem" }}>
+                    Esta cuota tiene {cuotaSeleccionada.dias_mora} día(s) de atraso: se sumó un
+                    recargo de ${cuotaSeleccionada.recargo_por_mora} al saldo pendiente.
+                  </p>
+                )}
                 {mensajeError && <div className="mensaje-error">{mensajeError}</div>}
 
                 <form className="formulario-en-linea" onSubmit={manejarEnvioPago}>

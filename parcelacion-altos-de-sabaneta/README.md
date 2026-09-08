@@ -108,6 +108,20 @@ La aplicación queda disponible en `http://localhost:3000`.
   valida que el monto no exceda el saldo pendiente y recalcula el estado de la
   cuota (`pendiente` → `parcial` → `pagada`) en cada abono.
 
+### Recargo por mora
+
+Política de la parcelación: el pago debe hacerse dentro de los primeros 5 días
+del mes (es decir, antes de la `fecha_vencimiento` de la cuota). Cada día de
+atraso después de esa fecha suma un recargo fijo de **$1.000/día** al saldo
+pendiente (`RECARGO_POR_DIA_MORA` en `modulos/cuotas_pagos/modelos.py`).
+
+- El recargo se calcula dinámicamente (`Cuota.dias_mora`, `Cuota.recargo_por_mora`)
+  y crece día a día mientras la cuota siga sin pagarse por completo.
+- Una vez la cuota queda `pagada`, la mora se congela en la fecha del pago que
+  la completó: el recargo no sigue aumentando después de saldada.
+- `saldo_pendiente` ya incluye el recargo, así que la validación de pagos y el
+  cálculo de "recaudado" en reportes son automáticamente consistentes.
+
 ## Módulo de reportes
 
 - No tiene tablas propias: agrega en tiempo real la información de unidades,

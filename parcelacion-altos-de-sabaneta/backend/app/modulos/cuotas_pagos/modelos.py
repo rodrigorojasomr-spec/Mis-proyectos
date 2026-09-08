@@ -1,13 +1,18 @@
 """Modelos ORM de cuotas de mantenimiento y sus pagos asociados."""
 
 import enum
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.nucleo.base_datos import Base
+
+# El pago de una cuota debe hacerse antes de su fecha de vencimiento (política de
+# la parcelación: dentro de los primeros 5 días del mes). Cada día de atraso
+# después de esa fecha suma este recargo fijo al saldo pendiente.
+RECARGO_POR_DIA_MORA = Decimal("1000")
 
 
 class EstadoCuota(str, enum.Enum):
@@ -36,10 +41,37 @@ class Cuota(Base):
     pagos: Mapped[list["Pago"]] = relationship(back_populates="cuota", cascade="all, delete-orphan")
 
     @property
+    def dias_mora(self) -> int:
+        """Días transcurridos desde el vencimiento sin haberse pagado por completo.
+
+        Mientras la cuota siga sin pagarse, la mora se cuenta hasta hoy (crece
+        día a día). Una vez pagada, queda fija en la fecha del pago que la
+        completó, para que el recargo no siga aumentando después de saldada.
+        """
+        if self.estado == EstadoCuota.PAGADA:
+            if not self.pagos:
+                return 0
+            fecha_referencia = max(pago.creado_en for pago in self.pagos).date()
+        else:
+            fecha_referencia = date.today()
+
+        return max(0, (fecha_referencia - self.fecha_vencimiento).days)
+
+    @property
+    def recargo_por_mora(self) -> Decimal:
+        """Recargo acumulado: $1.000 por cada día de atraso sobre la fecha de vencimiento."""
+        return Decimal(self.dias_mora) * RECARGO_POR_DIA_MORA
+
+    @property
+    def monto_con_recargo(self) -> Decimal:
+        """Monto total a pagar incluyendo el recargo por mora, si aplica."""
+        return self.monto + self.recargo_por_mora
+
+    @property
     def saldo_pendiente(self) -> Decimal:
-        """Monto que aún falta pagar: el total de la cuota menos la suma de los pagos registrados."""
+        """Monto que aún falta pagar: la cuota más su recargo por mora, menos lo ya pagado."""
         total_pagado = sum((pago.monto_pagado for pago in self.pagos), Decimal("0"))
-        return self.monto - total_pagado
+        return self.monto_con_recargo - total_pagado
 
 
 class Pago(Base):
@@ -52,6 +84,6 @@ class Pago(Base):
     monto_pagado: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     metodo_pago: Mapped[str] = mapped_column(String(50), nullable=False)
     registrado_por_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), nullable=False)
-    creado_en: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     cuota: Mapped["Cuota"] = relationship(back_populates="pagos")

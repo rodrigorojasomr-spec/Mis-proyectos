@@ -59,6 +59,9 @@ class CuotaRespuesta(BaseModel):
     monto: Decimal
     fecha_vencimiento: date
     estado: EstadoCuota
+    dias_mora: int
+    recargo_por_mora: Decimal
+    monto_con_recargo: Decimal
     saldo_pendiente: Decimal
 
     model_config = {"from_attributes": True}

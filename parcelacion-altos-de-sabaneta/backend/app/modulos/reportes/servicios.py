@@ -25,14 +25,21 @@ def _mapa_nombres_residentes(sesion: Session) -> dict[int, str]:
     return {usuario.id: usuario.nombre_completo for usuario in sesion.query(Usuario).all()}
 
 
+def _total_recaudado(cuotas: list[Cuota]) -> Decimal:
+    """Suma real de los pagos registrados. No se calcula como facturado menos
+    pendiente porque el saldo pendiente incluye el recargo por mora, que no
+    forma parte de lo facturado ni de lo efectivamente pagado."""
+    return sum((pago.monto_pagado for cuota in cuotas for pago in cuota.pagos), Decimal("0"))
+
+
 def generar_resumen(sesion: Session) -> ResumenReporte:
     """Calcula el panorama financiero general de la parcelación."""
     cuotas = _cargar_cuotas_con_pagos(sesion)
     hoy = date.today()
 
     monto_facturado = sum((cuota.monto for cuota in cuotas), Decimal("0"))
+    monto_recaudado = _total_recaudado(cuotas)
     monto_pendiente = sum((cuota.saldo_pendiente for cuota in cuotas), Decimal("0"))
-    monto_recaudado = monto_facturado - monto_pendiente
 
     return ResumenReporte(
         total_unidades=sesion.query(Unidad).count(),
@@ -71,7 +78,7 @@ def generar_cartera_por_unidad(sesion: Session) -> list[CarteraUnidad]:
                 codigo_unidad=unidad.codigo,
                 residente=nombres_residentes.get(unidad.residente_id) if unidad.residente_id else None,
                 monto_facturado=facturado,
-                monto_recaudado=facturado - pendiente,
+                monto_recaudado=_total_recaudado(cuotas_unidad),
                 saldo_pendiente=pendiente,
             )
         )
@@ -104,7 +111,8 @@ def generar_cuotas_vencidas(sesion: Session) -> list[CuotaVencida]:
                 concepto=cuota.concepto,
                 monto=cuota.monto,
                 fecha_vencimiento=cuota.fecha_vencimiento,
-                dias_vencida=(hoy - cuota.fecha_vencimiento).days,
+                dias_vencida=cuota.dias_mora,
+                recargo_por_mora=cuota.recargo_por_mora,
                 saldo_pendiente=cuota.saldo_pendiente,
             )
         )
