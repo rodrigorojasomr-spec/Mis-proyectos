@@ -17,7 +17,9 @@ en el backend como en el frontend.
   cálculo automático de estado (`pendiente` / `parcial` / `pagada`).
 - ✅ Módulo de **comunicados**: publicación de avisos por parte del
   administrador (con opción de destacarlos), visibles para todos los usuarios.
-- ⏳ Próximos módulos: reportes (cartera, cuotas vencidas, etc.).
+- ✅ Módulo de **reportes**: panorama financiero general, cartera por unidad
+  y listado de cuotas vencidas. Solo para administrador.
+- ⏳ Próximos módulos: por definir.
 
 > Nota: esta parcelación no cuenta con zonas comunes de uso reservable
 > (salón social, cancha, etc.), por lo que no se contempla un módulo de
@@ -44,7 +46,8 @@ parcelacion-altos-de-sabaneta/
 │   │       ├── autenticacion/       # Modelo, esquemas, servicios y rutas
 │   │       ├── unidades/            # Casas/lotes y asignación de residente
 │   │       ├── cuotas_pagos/        # Cuotas de mantenimiento y sus abonos
-│   │       └── comunicados/         # Avisos publicados por la administración
+│   │       ├── comunicados/         # Avisos publicados por la administración
+│   │       └── reportes/            # Agregaciones de solo lectura (sin tablas propias)
 │   ├── supabase/esquema.sql         # Esquema SQL de referencia
 │   └── requirements.txt
 └── frontend/
@@ -54,7 +57,8 @@ parcelacion-altos-de-sabaneta/
     │   └── panel/                   # Panel protegido tras iniciar sesión
     │       ├── cuotas/              # Vista de residente: sus cuotas y pagos
     │       ├── administracion/      # Vista de administrador: unidades y cuotas
-    │       └── comunicados/         # Avisos: lectura para todos, CRUD para admin
+    │       ├── comunicados/         # Avisos: lectura para todos, CRUD para admin
+    │       └── reportes/            # KPIs, cartera por unidad y cuotas vencidas
     ├── context/ContextoAutenticacion.tsx
     └── lib/api.ts                   # Cliente HTTP hacia el backend
 ```
@@ -103,6 +107,18 @@ La aplicación queda disponible en `http://localhost:3000`.
 - Los pagos (`POST /api/cuotas/{id}/pagos`) admiten abonos parciales. El backend
   valida que el monto no exceda el saldo pendiente y recalcula el estado de la
   cuota (`pendiente` → `parcial` → `pagada`) en cada abono.
+
+## Módulo de reportes
+
+- No tiene tablas propias: agrega en tiempo real la información de unidades,
+  cuotas y pagos ya existentes.
+- `GET /api/reportes/resumen`: total facturado, recaudado, saldo pendiente y
+  conteo de cuotas por estado (`pendiente` / `parcial` / `pagada` / vencidas).
+- `GET /api/reportes/cartera`: estado de cuenta (facturado, recaudado, saldo)
+  de cada unidad.
+- `GET /api/reportes/cuotas-vencidas`: cuotas no pagadas cuya fecha de
+  vencimiento ya pasó, con días de mora.
+- Todos los endpoints están restringidos a `administrador`.
 
 ## Reglas de seguridad aplicadas
 

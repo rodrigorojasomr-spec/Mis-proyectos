@@ -211,3 +211,66 @@ export async function eliminarComunicado(token: string, comunicadoId: number): P
     );
   }
 }
+
+export interface ResumenReporte {
+  total_unidades: number;
+  total_cuotas_emitidas: number;
+  monto_total_facturado: string;
+  monto_total_recaudado: string;
+  monto_total_pendiente: string;
+  cuotas_pendientes: number;
+  cuotas_parciales: number;
+  cuotas_pagadas: number;
+  cuotas_vencidas: number;
+}
+
+export interface CarteraUnidad {
+  unidad_id: number;
+  codigo_unidad: string;
+  residente: string | null;
+  monto_facturado: string;
+  monto_recaudado: string;
+  saldo_pendiente: string;
+}
+
+export interface CuotaVencida {
+  cuota_id: number;
+  unidad_id: number;
+  codigo_unidad: string;
+  residente: string | null;
+  concepto: string;
+  monto: string;
+  fecha_vencimiento: string;
+  dias_vencida: number;
+  saldo_pendiente: string;
+}
+
+export function obtenerResumenReporte(token: string): Promise<ResumenReporte> {
+  return solicitar<ResumenReporte>("/api/reportes/resumen", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function obtenerCarteraPorUnidad(token: string): Promise<CarteraUnidad[]> {
+  return solicitar<CarteraUnidad[]>("/api/reportes/cartera", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function obtenerCuotasVencidas(token: string): Promise<CuotaVencida[]> {
+  return solicitar<CuotaVencida[]>("/api/reportes/cuotas-vencidas", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** Formatea un monto (string decimal de la API) como moneda para mostrar en pantalla. */
+export function formatearMoneda(monto: string): string {
+  const numero = Number(monto);
+  if (numero >= 1_000_000) {
+    return `$${(numero / 1_000_000).toFixed(1)}M`;
+  }
+  if (numero >= 1_000) {
+    return `$${(numero / 1_000).toFixed(1)}K`;
+  }
+  return `$${numero.toFixed(0)}`;
+}

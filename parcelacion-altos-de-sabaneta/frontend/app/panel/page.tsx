@@ -67,6 +67,16 @@ export default function PaginaPanel() {
             </Link>
           </div>
         )}
+
+        {usuario.rol === "administrador" && (
+          <div className="seccion">
+            <h2>Reportes</h2>
+            <p>Panorama financiero, cartera por unidad y cuotas vencidas.</p>
+            <Link href="/panel/reportes" className="enlace-navegacion">
+              Ver reportes →
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   );
