@@ -156,3 +156,58 @@ export function registrarPago(
     body: JSON.stringify(datos),
   });
 }
+
+export interface Comunicado {
+  id: number;
+  titulo: string;
+  contenido: string;
+  destacado: boolean;
+  autor_id: number;
+  creado_en: string;
+  actualizado_en: string;
+}
+
+export function listarComunicados(token: string): Promise<Comunicado[]> {
+  return solicitar<Comunicado[]>("/api/comunicados", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export function crearComunicado(
+  token: string,
+  datos: { titulo: string; contenido: string; destacado: boolean }
+): Promise<Comunicado> {
+  return solicitar<Comunicado>("/api/comunicados", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+}
+
+export function actualizarComunicado(
+  token: string,
+  comunicadoId: number,
+  datos: Partial<{ titulo: string; contenido: string; destacado: boolean }>
+): Promise<Comunicado> {
+  return solicitar<Comunicado>(`/api/comunicados/${comunicadoId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(datos),
+  });
+}
+
+/** Elimina un comunicado. No usa solicitar() porque la respuesta 204 no trae cuerpo JSON. */
+export async function eliminarComunicado(token: string, comunicadoId: number): Promise<void> {
+  const respuesta = await fetch(`${URL_BASE_API}/api/comunicados/${comunicadoId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!respuesta.ok) {
+    const cuerpoError = await respuesta.json().catch(() => null);
+    throw new ErrorApi(
+      respuesta.status,
+      cuerpoError?.detail ?? "No se pudo eliminar el comunicado"
+    );
+  }
+}

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.modulos.autenticacion.rutas import enrutador as enrutador_autenticacion
+from app.modulos.comunicados.rutas import enrutador as enrutador_comunicados
 from app.modulos.cuotas_pagos.rutas import enrutador as enrutador_cuotas_pagos
 from app.modulos.unidades.rutas import enrutador as enrutador_unidades
 from app.nucleo.base_datos import Base, motor
@@ -32,6 +33,7 @@ aplicacion.add_middleware(
 aplicacion.include_router(enrutador_autenticacion)
 aplicacion.include_router(enrutador_unidades)
 aplicacion.include_router(enrutador_cuotas_pagos)
+aplicacion.include_router(enrutador_comunicados)
 
 
 @aplicacion.get("/api/salud", tags=["Salud"])

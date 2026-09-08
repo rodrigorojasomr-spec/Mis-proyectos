@@ -15,7 +15,9 @@ en el backend como en el frontend.
 - ✅ Módulo de **cuotas y pagos**: generación de cuotas de mantenimiento por
   unidad, registro de abonos (totales o parciales) con validación de saldo y
   cálculo automático de estado (`pendiente` / `parcial` / `pagada`).
-- ⏳ Próximos módulos: comunicados, reservas de zonas comunes, reportes.
+- ✅ Módulo de **comunicados**: publicación de avisos por parte del
+  administrador (con opción de destacarlos), visibles para todos los usuarios.
+- ⏳ Próximos módulos: reservas de zonas comunes, reportes.
 
 ## Stack técnico
 
@@ -37,7 +39,8 @@ parcelacion-altos-de-sabaneta/
 │   │   └── modulos/
 │   │       ├── autenticacion/       # Modelo, esquemas, servicios y rutas
 │   │       ├── unidades/            # Casas/lotes y asignación de residente
-│   │       └── cuotas_pagos/        # Cuotas de mantenimiento y sus abonos
+│   │       ├── cuotas_pagos/        # Cuotas de mantenimiento y sus abonos
+│   │       └── comunicados/         # Avisos publicados por la administración
 │   ├── supabase/esquema.sql         # Esquema SQL de referencia
 │   └── requirements.txt
 └── frontend/
@@ -46,7 +49,8 @@ parcelacion-altos-de-sabaneta/
     │   ├── (auth)/registro/
     │   └── panel/                   # Panel protegido tras iniciar sesión
     │       ├── cuotas/              # Vista de residente: sus cuotas y pagos
-    │       └── administracion/      # Vista de administrador: unidades y cuotas
+    │       ├── administracion/      # Vista de administrador: unidades y cuotas
+    │       └── comunicados/         # Avisos: lectura para todos, CRUD para admin
     ├── context/ContextoAutenticacion.tsx
     └── lib/api.ts                   # Cliente HTTP hacia el backend
 ```

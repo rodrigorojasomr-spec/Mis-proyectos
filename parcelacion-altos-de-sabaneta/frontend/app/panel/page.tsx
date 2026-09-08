@@ -43,6 +43,14 @@ export default function PaginaPanel() {
         <h2>Bienvenido/a, {usuario.nombre_completo}</h2>
 
         <div className="seccion">
+          <h2>Comunicados</h2>
+          <p>Avisos y noticias publicados por la administración de la parcelación.</p>
+          <Link href="/panel/comunicados" className="enlace-navegacion">
+            Ver comunicados →
+          </Link>
+        </div>
+
+        <div className="seccion">
           <h2>Cuotas y pagos</h2>
           <p>Consulta el estado de las cuotas de mantenimiento y registra tus pagos.</p>
           <Link href="/panel/cuotas" className="enlace-navegacion">

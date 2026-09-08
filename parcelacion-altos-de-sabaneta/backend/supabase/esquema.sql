@@ -69,8 +69,20 @@ create table if not exists pagos (
 
 create index if not exists idx_pagos_cuota on pagos (cuota_id);
 
+-- Comunicados publicados por la administración, visibles para todos los residentes
+create table if not exists comunicados (
+    id serial primary key,
+    titulo varchar(150) not null,
+    contenido text not null,
+    destacado boolean not null default false,
+    autor_id integer not null references usuarios (id),
+    creado_en timestamptz not null default now(),
+    actualizado_en timestamptz not null default now()
+);
+
+create index if not exists idx_comunicados_creado_en on comunicados (creado_en desc);
+
 -- Tablas futuras (fuera del alcance de este módulo, se dejan como referencia
--- para los siguientes módulos: comunicados, reservas de zonas comunes, etc.).
+-- para los siguientes módulos: reservas de zonas comunes, reportes, etc.).
 --
--- create table comunicados (...);
 -- create table reservas (...);
