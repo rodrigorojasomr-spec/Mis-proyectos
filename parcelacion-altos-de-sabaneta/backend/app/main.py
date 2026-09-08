@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.modulos.autenticacion.rutas import enrutador as enrutador_autenticacion
+from app.modulos.cuotas_pagos.rutas import enrutador as enrutador_cuotas_pagos
+from app.modulos.unidades.rutas import enrutador as enrutador_unidades
 from app.nucleo.base_datos import Base, motor
 from app.nucleo.configuracion import obtener_configuracion
 
@@ -26,8 +28,10 @@ aplicacion.add_middleware(
     allow_headers=["*"],
 )
 
-# Cada módulo de negocio (autenticación, condominios, cuotas, etc.) expone su propio router.
+# Cada módulo de negocio (autenticación, unidades, cuotas, etc.) expone su propio router.
 aplicacion.include_router(enrutador_autenticacion)
+aplicacion.include_router(enrutador_unidades)
+aplicacion.include_router(enrutador_cuotas_pagos)
 
 
 @aplicacion.get("/api/salud", tags=["Salud"])

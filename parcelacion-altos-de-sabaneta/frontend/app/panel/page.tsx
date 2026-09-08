@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAutenticacion } from "@/context/ContextoAutenticacion";
 
@@ -40,10 +41,24 @@ export default function PaginaPanel() {
 
       <main className="panel-contenido">
         <h2>Bienvenido/a, {usuario.nombre_completo}</h2>
-        <p>
-          Este es el panel inicial de la parcelación. Próximamente aquí verás la gestión de
-          unidades, residentes y cuotas de mantenimiento.
-        </p>
+
+        <div className="seccion">
+          <h2>Cuotas y pagos</h2>
+          <p>Consulta el estado de las cuotas de mantenimiento y registra tus pagos.</p>
+          <Link href="/panel/cuotas" className="enlace-navegacion">
+            Ir a mis cuotas →
+          </Link>
+        </div>
+
+        {usuario.rol === "administrador" && (
+          <div className="seccion">
+            <h2>Administración</h2>
+            <p>Crea unidades, asigna residentes y genera cuotas de mantenimiento.</p>
+            <Link href="/panel/administracion" className="enlace-navegacion">
+              Ir a administración →
+            </Link>
+          </div>
+        )}
       </main>
     </div>
   );

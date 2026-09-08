@@ -27,7 +27,7 @@ def verificar_contrasena(contrasena_plana: str, contrasena_hasheada: str) -> boo
 def crear_token_acceso(datos: dict[str, Any]) -> str:
     """Crea un JWT firmado con expiración, usado como token de sesión."""
     datos_a_codificar = datos.copy()
-    expiracion = datetime.now(UTC) + timedelta(minutos=configuracion.minutos_expiracion_token)
+    expiracion = datetime.now(UTC) + timedelta(minutes=configuracion.minutos_expiracion_token)
     datos_a_codificar.update({"exp": expiracion})
     return jwt.encode(
         datos_a_codificar,

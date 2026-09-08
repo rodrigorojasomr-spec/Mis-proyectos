@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modulos.autenticacion.esquemas import UsuarioInicioSesion, UsuarioRegistro
-from app.modulos.autenticacion.modelos import Usuario
+from app.modulos.autenticacion.modelos import RolUsuario, Usuario
 from app.nucleo.seguridad import crear_token_acceso, obtener_hash_contrasena, verificar_contrasena
 
 
@@ -58,3 +58,13 @@ def autenticar_usuario(sesion: Session, credenciales: UsuarioInicioSesion) -> Us
 def generar_token_para_usuario(usuario: Usuario) -> str:
     """Genera el JWT de sesión incluyendo el id y el rol del usuario."""
     return crear_token_acceso({"sub": str(usuario.id), "rol": usuario.rol.value})
+
+
+def listar_residentes(sesion: Session) -> list[Usuario]:
+    """Devuelve los usuarios con rol residente, usados para asignarlos a una unidad."""
+    return (
+        sesion.query(Usuario)
+        .filter(Usuario.rol == RolUsuario.RESIDENTE, Usuario.esta_activo.is_(True))
+        .order_by(Usuario.nombre_completo)
+        .all()
+    )

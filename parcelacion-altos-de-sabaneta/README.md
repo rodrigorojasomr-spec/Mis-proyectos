@@ -10,7 +10,12 @@ en el backend como en el frontend.
 - ✅ Estructura base del proyecto (backend + frontend).
 - ✅ Módulo de **autenticación**: registro, login y perfil, con roles
   `administrador` y `residente`.
-- ⏳ Próximos módulos: gestión de condominios/unidades, cuotas y pagos.
+- ✅ Módulo de **unidades**: registro de casas/lotes y asignación de residente
+  (prerequisito mínimo para asociar cuotas a un inmueble).
+- ✅ Módulo de **cuotas y pagos**: generación de cuotas de mantenimiento por
+  unidad, registro de abonos (totales o parciales) con validación de saldo y
+  cálculo automático de estado (`pendiente` / `parcial` / `pagada`).
+- ⏳ Próximos módulos: comunicados, reservas de zonas comunes, reportes.
 
 ## Stack técnico
 
@@ -30,7 +35,9 @@ parcelacion-altos-de-sabaneta/
 │   │   ├── main.py                  # Punto de entrada de la API
 │   │   ├── nucleo/                  # Configuración, BD, seguridad, dependencias
 │   │   └── modulos/
-│   │       └── autenticacion/       # Modelo, esquemas, servicios y rutas
+│   │       ├── autenticacion/       # Modelo, esquemas, servicios y rutas
+│   │       ├── unidades/            # Casas/lotes y asignación de residente
+│   │       └── cuotas_pagos/        # Cuotas de mantenimiento y sus abonos
 │   ├── supabase/esquema.sql         # Esquema SQL de referencia
 │   └── requirements.txt
 └── frontend/
@@ -38,6 +45,8 @@ parcelacion-altos-de-sabaneta/
     │   ├── (auth)/iniciar-sesion/
     │   ├── (auth)/registro/
     │   └── panel/                   # Panel protegido tras iniciar sesión
+    │       ├── cuotas/              # Vista de residente: sus cuotas y pagos
+    │       └── administracion/      # Vista de administrador: unidades y cuotas
     ├── context/ContextoAutenticacion.tsx
     └── lib/api.ts                   # Cliente HTTP hacia el backend
 ```
@@ -74,6 +83,18 @@ npm run dev
 ```
 
 La aplicación queda disponible en `http://localhost:3000`.
+
+## Módulo de cuotas y pagos
+
+- Una **unidad** puede tener cero o un residente asignado (`GET/PATCH /api/unidades`).
+- El **administrador** crea cuotas para una unidad (`POST /api/cuotas`) indicando
+  concepto, monto y fecha de vencimiento.
+- El **residente** solo puede ver y pagar las cuotas de su propia unidad; el
+  administrador puede ver y pagar las de cualquier unidad. Esta verificación
+  ocurre en `verificar_pertenencia_unidad` (backend), no solo en el frontend.
+- Los pagos (`POST /api/cuotas/{id}/pagos`) admiten abonos parciales. El backend
+  valida que el monto no exceda el saldo pendiente y recalcula el estado de la
+  cuota (`pendiente` → `parcial` → `pagada`) en cada abono.
 
 ## Reglas de seguridad aplicadas
 

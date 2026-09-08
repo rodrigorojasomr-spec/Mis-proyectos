@@ -13,10 +13,11 @@ from app.modulos.autenticacion.modelos import Usuario
 from app.modulos.autenticacion.servicios import (
     autenticar_usuario,
     generar_token_para_usuario,
+    listar_residentes,
     registrar_usuario,
 )
 from app.nucleo.base_datos import obtener_sesion_bd
-from app.nucleo.dependencias import obtener_usuario_actual
+from app.nucleo.dependencias import obtener_usuario_actual, requerir_rol
 
 enrutador = APIRouter(prefix="/api/autenticacion", tags=["Autenticación"])
 
@@ -40,3 +41,13 @@ def login(credenciales: UsuarioInicioSesion, sesion: Session = Depends(obtener_s
 def perfil(usuario_actual: Usuario = Depends(obtener_usuario_actual)) -> Usuario:
     """Devuelve los datos del usuario autenticado a partir de su token."""
     return usuario_actual
+
+
+@enrutador.get("/residentes", response_model=list[UsuarioRespuesta])
+def residentes(
+    sesion: Session = Depends(obtener_sesion_bd),
+    _administrador: Usuario = Depends(requerir_rol("administrador")),
+) -> list[Usuario]:
+    """Lista los usuarios con rol residente, para que el administrador pueda
+    asignarlos a una unidad. Solo el administrador puede consultarla."""
+    return listar_residentes(sesion)
