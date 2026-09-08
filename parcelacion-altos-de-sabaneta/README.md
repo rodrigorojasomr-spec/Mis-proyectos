@@ -17,7 +17,11 @@ en el backend como en el frontend.
   cálculo automático de estado (`pendiente` / `parcial` / `pagada`).
 - ✅ Módulo de **comunicados**: publicación de avisos por parte del
   administrador (con opción de destacarlos), visibles para todos los usuarios.
-- ⏳ Próximos módulos: reservas de zonas comunes, reportes.
+- ⏳ Próximos módulos: reportes (cartera, cuotas vencidas, etc.).
+
+> Nota: esta parcelación no cuenta con zonas comunes de uso reservable
+> (salón social, cancha, etc.), por lo que no se contempla un módulo de
+> reservas.
 
 ## Stack técnico
 
