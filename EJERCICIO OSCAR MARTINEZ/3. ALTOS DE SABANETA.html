@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Altos de Sabaneta - Registro de Ingresos y Egresos</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f2f2;
+    margin: 0;
+    padding: 0;
+    color: #222;
+  }
+  .app-shell { display: flex; min-height: 100vh; align-items: stretch; }
+
+  /* ===== MENU LATERAL ===== */
+  .sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    background: #1f2d3a;
+    color: #ecf0f1;
+    padding: 16px 0;
+  }
+  .sidebar .brand { padding: 0 18px 16px; border-bottom: 1px solid #33465a; margin-bottom: 10px; }
+  .sidebar .brand h1 { margin: 0; font-size: 17px; }
+  .sidebar .brand p { margin: 4px 0 0; font-size: 11px; color: #9fb0c0; }
+  .menu-group-label {
+    padding: 14px 18px 6px;
+    font-size: 11px;
+    letter-spacing: .5px;
+    color: #7f93a6;
+    text-transform: uppercase;
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #dbe4ec;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .menu-item:hover { background: #2a3c4d; }
+  .menu-item.active { background: #2c7be5; color: #fff; font-weight: bold; }
+  .menu-item .ico { font-size: 16px; }
+
+  /* ===== CONTENIDO PRINCIPAL ===== */
+  .main-content { flex: 1; padding: 18px; overflow-x: auto; }
+  .container { max-width: 1120px; margin: 0 auto; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { margin-top: 0; font-size: 16px; color: #2c3e50; }
+  label { display: block; margin: 10px 0 4px; font-size: 13px; font-weight: bold; color: #444; }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%;
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  textarea { resize: vertical; }
+  .owner-list { max-height: 220px; overflow-y: auto; border: 1px solid #ddd; border-radius: 3px; margin-top: 8px; }
+  .owner-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .owner-item:hover { background: #eef4fb; }
+  .owner-item.selected { background: #2c3e50; color: #fff; }
+  .owner-item .finca-tag {
+    display: inline-block;
+    background: #eee;
+    color: #555;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-right: 6px;
+  }
+  .owner-item.selected .finca-tag { background: #556677; color: #fff; }
+  table.meses { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  table.meses th, table.meses td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+  table.meses th { background: #f7f7f7; }
+  .pagado { color: #1e7e34; font-weight: bold; background: #eaf7ec; }
+  .pendiente { color: #b02a37; font-weight: bold; background: #fbeaea; }
+  .resumen { margin-top: 10px; font-size: 13px; color: #444; }
+  .valor-box {
+    background: #eef4fb;
+    border: 1px solid #cfe0f2;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+  .valor-box .total { font-size: 20px; font-weight: bold; color: #2c3e50; margin-top: 6px; }
+  button.accion {
+    margin-top: 14px;
+    width: 100%;
+    background: #1e7e34;
+    color: #fff;
+    border: none;
+    padding: 12px;
+    font-size: 15px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button.accion:hover { background: #17652a; }
+  button.accion:disabled { background: #aaa; cursor: not-allowed; }
+  button.accion.gasto { background: #b02a37; }
+  button.accion.gasto:hover { background: #8e222c; }
+  .mensaje-ok {
+    margin-top: 10px;
+    padding: 10px;
+    background: #eaf7ec;
+    border: 1px solid #b6e0bd;
+    border-radius: 4px;
+    color: #1e7e34;
+    font-size: 13px;
+    display: none;
+  }
+  .sin-pendientes {
+    margin-top: 12px;
+    padding: 10px;
+    background: #eaf7ec;
+    border: 1px solid #b6e0bd;
+    border-radius: 4px;
+    color: #1e7e34;
+    font-size: 13px;
+  }
+  .registro-log { margin-top: 8px; font-size: 12px; }
+  .registro-log table { width: 100%; border-collapse: collapse; }
+  .registro-log th, .registro-log td { border: 1px solid #eee; padding: 5px; text-align: left; }
+  .registro-log th { background: #f7f7f7; }
+  .oculto { display: none; }
+  .nota { font-size: 11px; color: #777; margin-top: 4px; }
+
+  /* ===== TABLERO ===== */
+  .filtros-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .chips-resumen { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .chip {
+    background: #f7f9fb;
+    border: 1px solid #e0e6eb;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #555;
+  }
+  .chip strong { color: #2c3e50; font-size: 13px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  .kpi { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 16px; text-align: center; }
+  .kpi-label { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: .3px; }
+  .kpi-valor { font-size: 26px; font-weight: bold; color: #2c3e50; margin-top: 6px; }
+  .kpi.recaudos .kpi-valor { color: #1e7e34; }
+  .kpi.gastos .kpi-valor { color: #b02a37; }
+  .kpi.proyectado .kpi-valor { color: #2c7be5; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tabla-resumen { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .tabla-resumen th, .tabla-resumen td { border: 1px solid #eee; padding: 6px 8px; text-align: left; }
+  .tabla-resumen th { background: #f7f7f7; }
+  .tabla-resumen td.num { text-align: right; }
+  .tag-aldia { color: #1e7e34; font-weight: bold; }
+  .tag-moroso { color: #b02a37; font-weight: bold; }
+  @media (max-width: 900px) {
+    .filtros-grid { grid-template-columns: 1fr 1fr; }
+    .kpi-row { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===== MENU LATERAL ===== -->
+  <div class="sidebar">
+    <div class="brand">
+      <h1>ALTOS DE SABANETA</h1>
+      <p>Ingresos y egresos</p>
+    </div>
+
+    <div class="menu-group-label">Administrador</div>
+    <button class="menu-item" id="menuTablero" onclick="mostrarSeccion('tablero')"><span class="ico">📊</span> Tablero</button>
+    <button class="menu-item" id="menuEgresos" onclick="mostrarSeccion('egresos')"><span class="ico">💵</span> Registrar gasto</button>
+
+    <div class="menu-group-label">Propietarios</div>
+    <button class="menu-item" id="menuIngresos" onclick="mostrarSeccion('ingresos')"><span class="ico">🏠</span> Cuotas de administración</button>
+    <button class="menu-item" id="menuSugerencias" onclick="mostrarSeccion('sugerencias')"><span class="ico">💡</span> Sugerencias</button>
+  </div>
+
+  <!-- ===== CONTENIDO ===== -->
+  <div class="main-content">
+    <div class="container">
+
+      <!-- SECCION TABLERO -->
+      <div id="tabTablero">
+        <div class="card">
+          <h2>Filtros</h2>
+          <div class="filtros-grid">
+            <div>
+              <label>Año</label>
+              <select id="fAnio" onchange="renderTablero()"></select>
+            </div>
+            <div>
+              <label>Mes</label>
+              <select id="fMes" onchange="renderTablero()"></select>
+            </div>
+            <div>
+              <label>Finca o propietario</label>
+              <input type="text" id="fBusqueda" oninput="renderTablero()" placeholder="Nombre o número...">
+            </div>
+            <div>
+              <label>Estado de cuenta actual</label>
+              <select id="fEstado" onchange="renderTablero()">
+                <option value="todos">Todos</option>
+                <option value="aldia">Al día</option>
+                <option value="moroso">Moroso</option>
+              </select>
+            </div>
+          </div>
+          <div class="chips-resumen">
+            <div class="chip">Recaudado por cuotas: <strong id="chipCuotas">$0</strong></div>
+            <div class="chip">Recaudado por moras: <strong id="chipMoras">$0</strong></div>
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi recaudos"><div class="kpi-label">Recaudos</div><div class="kpi-valor" id="kpiRecaudos">$0</div></div>
+          <div class="kpi gastos"><div class="kpi-label">Gastos / egresos</div><div class="kpi-valor" id="kpiGastos">$0</div></div>
+          <div class="kpi proyectado"><div class="kpi-label">Proyectado cuotas restantes del año</div><div class="kpi-valor" id="kpiProyectado">$0</div></div>
+        </div>
+
+        <div class="card">
+          <h2 id="tituloGraficoMensual">Recaudos por mes</h2>
+          <div id="graficoMensual"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h2>Resumen por propietario</h2>
+            <div id="tablaPropietarios"></div>
+          </div>
+          <div class="card">
+            <h2>Resumen por categoría de gasto</h2>
+            <div id="tablaCategorias"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h2>Gastos por categoría (cantidad de registros)</h2>
+            <div id="graficoCategorias"></div>
+          </div>
+          <div class="card">
+            <h2>Ingresos vs. egresos</h2>
+            <div id="graficoComparacion"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCION INGRESOS -->
+      <div id="tabIngresos" class="oculto">
+        <div class="card">
+          <h2>Buscar propietario</h2>
+          <input type="text" id="buscador" placeholder="Escriba nombre o número de finca..." oninput="filtrarPropietarios()">
+          <div class="owner-list" id="listaPropietarios"></div>
+        </div>
+
+        <div class="card oculto" id="detallePropietario">
+          <h2 id="nombrePropietarioSel"></h2>
+          <div class="resumen" id="fincaPropietarioSel"></div>
+
+          <table class="meses">
+            <thead>
+              <tr id="filaMeses"></tr>
+            </thead>
+            <tbody>
+              <tr id="filaEstados"></tr>
+            </tbody>
+          </table>
+
+          <div id="zonaPago"></div>
+
+          <div class="mensaje-ok" id="mensajeIngresoOk"></div>
+        </div>
+
+        <div class="card" id="cardLogIngresos">
+          <h2>Cuotas registradas en esta sesión/equipo</h2>
+          <div class="registro-log" id="logIngresos"><p class="nota">Aún no hay cuotas registradas localmente.</p></div>
+        </div>
+      </div>
+
+      <!-- SECCION EGRESOS -->
+      <div id="tabEgresos" class="oculto">
+        <div class="card">
+          <h2>Registrar gasto</h2>
+
+          <label>Fecha</label>
+          <input type="text" id="fechaGasto" readonly>
+
+          <label>Categoría</label>
+          <select id="categoriaGasto">
+            <option value="">Seleccione una categoría...</option>
+          </select>
+
+          <label>Concepto</label>
+          <input type="text" id="conceptoGasto" placeholder="Descripción del gasto">
+
+          <label>Valor</label>
+          <input type="number" id="valorGasto" placeholder="0" min="0">
+
+          <button class="accion gasto" onclick="guardarGasto()">Guardar gasto</button>
+
+          <div class="mensaje-ok" id="mensajeGastoOk"></div>
+        </div>
+
+        <div class="card" id="cardLogEgresos">
+          <h2>Gastos registrados en esta sesión/equipo</h2>
+          <div class="registro-log" id="logEgresos"><p class="nota">Aún no hay gastos registrados localmente.</p></div>
+        </div>
+      </div>
+
+      <!-- SECCION SUGERENCIAS -->
+      <div id="tabSugerencias" class="oculto">
+        <div class="card">
+          <h2>Nueva sugerencia</h2>
+
+          <label>Categoría</label>
+          <select id="categoriaSugerencia">
+            <option value="">Seleccione una categoría...</option>
+          </select>
+
+          <label>Propietario o finca (opcional)</label>
+          <input type="text" id="autorSugerencia" placeholder="Nombre o número de finca">
+
+          <label>Sugerencia</label>
+          <textarea id="mensajeSugerencia" rows="3" placeholder="Escriba aquí la sugerencia..."></textarea>
+
+          <button class="accion" onclick="guardarSugerencia()">Guardar sugerencia</button>
+
+          <div class="mensaje-ok" id="mensajeSugerenciaOk"></div>
+        </div>
+
+        <div class="card" id="cardLogSugerencias">
+          <h2>Sugerencias registradas</h2>
+
+          <div class="filtros-grid" style="grid-template-columns: 2fr 1fr auto;">
+            <div>
+              <label>Buscar (por texto, propietario o finca)</label>
+              <input type="text" id="buscadorSugerencias" placeholder="Escriba un pedazo del texto..." oninput="renderSugerencias()">
+            </div>
+            <div>
+              <label>Categoría</label>
+              <select id="filtroCategoriaSugerencia" onchange="renderSugerencias()">
+                <option value="todas">Todas</option>
+              </select>
+            </div>
+            <div>
+              <label>&nbsp;</label>
+              <button class="accion" style="margin-top:0;" onclick="exportarSugerenciasExcel()">Exportar a Excel</button>
+            </div>
+          </div>
+
+          <div class="registro-log" id="logSugerencias"><p class="nota">Aún no hay sugerencias registradas localmente.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   DATOS EXCLUSIVOS TOMADOS DEL ARCHIVO
+   "2- LO QUE ENTREGO ALTOS DE SABANETA...xlsx"
+   Hojas: CUOTAS 2026, CATEGORIAS, ESTADO CUOTAS 2024,
+   CUOTAS 2025, GASTOS 2024, GASTOS 2025, GASTOS 2026
+   ========================================================= */
+
+const CUOTA_MENSUAL = 60000; // Tomado de la hoja CUOTAS 2026 (celda B19 = 60000 * meses faltantes)
+
+const MESES = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+
+const PROPIETARIOS = [
+  {"finca":"11","nombre":"JUDY TAPIAS GIL","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"10","nombre":"YAIR ARLEY GIRALDO","meses":{"ENERO":91000,"FEBRERO":76000,"MARZO":60000,"ABRIL":60000,"MAYO":63000,"JUNIO":70000,"JULIO":null,"AGOSTO":63000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"15","nombre":"FINCA NUEVA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":null,"ABRIL":null,"MAYO":null,"JUNIO":null,"JULIO":null,"AGOSTO":null,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"09","nombre":"ESTELA CORREA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"08","nombre":"HENRRY FERRARO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"07","nombre":"OSCAR MARTINEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"06","nombre":"JUAN GUILLERMO POSADA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":null,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"05","nombre":"JAMES SANCHEZ","meses":{"ENERO":60000,"FEBRERO":61000,"MARZO":65000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":63000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"04","nombre":"NELSON ARAQUE","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"03","nombre":"LETICIA AGUDELO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":6000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"02","nombre":"ALEJANDRO LOPEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"01","nombre":"FRANK MONTOYA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"12","nombre":"RODRIGO NOVOA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"13","nombre":"ALEJANDRO CARMONA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":-90000,"MAYO":-91000,"JUNIO":-90000,"JULIO":-91000,"AGOSTO":-80000,"SEPTIEMBRE":null,"OCTUBRE":null,"NOVIEMBRE":null,"DICIEMBRE":null}},
+  {"finca":"14","nombre":"LA TAMARA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}}
+];
+
+const CATEGORIAS = [
+  "SCIOS PUBLICOS E INTERNET",
+  "JARDINERIA Y ASEO",
+  "DONACIONES",
+  "MANTENIMIENTO PORTON",
+  "ILUMINACION",
+  "CAMARAS SEGURIDAD",
+  "DEUDAS ADMON",
+  "PROYECTO RIELES 2025"
+];
+
+/* ---- Históricos (hojas ESTADO CUOTAS 2024, CUOTAS 2025, GASTOS 2024, GASTOS 2025, GASTOS 2026) ---- */
+
+const CUOTAS_2024 = [{"finca":"11","nombre":"JUDY TAPIAS GIL","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"10","nombre":"YAIR ARLEY GIRALDO","meses":{"ENERO":57000,"FEBRERO":57000,"MARZO":57000,"ABRIL":57000,"MAYO":57000,"JUNIO":57000,"JULIO":57000,"AGOSTO":57000,"SEPTIEMBRE":57000,"OCTUBRE":57000,"NOVIEMBRE":57000,"DICIEMBRE":57000}},{"finca":"09","nombre":"JUAN FERNANDO CORREA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"08","nombre":"HENRRY FERRARO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"07","nombre":"OSCAR MARTINEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"06","nombre":"JUAN GUILLERMO POSADA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"05","nombre":"JAMES SANCHEZ","meses":{"ENERO":60000,"FEBRERO":76000,"MARZO":65000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":86000,"SEPTIEMBRE":83000,"OCTUBRE":85000,"NOVIEMBRE":85000,"DICIEMBRE":85000}},{"finca":"04","nombre":"NELSON ARAQUE","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"03","nombre":"LETICIA AGUDELO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":82000,"ABRIL":84000,"MAYO":61000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"02","nombre":"ALEJANDRO LOPEZ","meses":{"ENERO":60000,"FEBRERO":62000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"01","nombre":"FRANK MONTOYA","meses":{"ENERO":60000,"FEBRERO":62000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"12","nombre":"RODRIGO NOVOA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":61000,"MAYO":61000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"13","nombre":"ALEJANDRO CARMONA","meses":{"ENERO":0,"FEBRERO":0,"MARZO":0,"ABRIL":0,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":72000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"14","nombre":"LA TAMARA","meses":{"ENERO":57000,"FEBRERO":57000,"MARZO":57000,"ABRIL":57000,"MAYO":57000,"JUNIO":57000,"JULIO":57000,"AGOSTO":57000,"SEPTIEMBRE":57000,"OCTUBRE":57000,"NOVIEMBRE":57000,"DICIEMBRE":57000}}];
+
+const CUOTAS_2025 = [{"finca":"11","nombre":"JUDY TAPIAS GIL","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":77000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"10","nombre":"YAIR ARLEY GIRALDO","meses":{"ENERO":91000,"FEBRERO":88000,"MARZO":91000,"ABRIL":84000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"09","nombre":"ESTELA CORREA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"08","nombre":"HENRRY FERRARO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"07","nombre":"OSCAR MARTINEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"06","nombre":"JUAN GUILLERMO POSADA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"05","nombre":"JAMES SANCHEZ","meses":{"ENERO":65000,"FEBRERO":88000,"MARZO":91000,"ABRIL":90000,"MAYO":91000,"JUNIO":90000,"JULIO":91000,"AGOSTO":60000,"SEPTIEMBRE":65000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"04","nombre":"NELSON ARAQUE","meses":{"ENERO":61000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"03","nombre":"LETICIA AGUDELO","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"02","nombre":"ALEJANDRO LOPEZ","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"01","nombre":"FRANK MONTOYA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"12","nombre":"RODRIGO NOVOA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"13","nombre":"ALEJANDRO CARMONA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}},{"finca":"14","nombre":"LA TAMARA","meses":{"ENERO":60000,"FEBRERO":60000,"MARZO":60000,"ABRIL":60000,"MAYO":60000,"JUNIO":60000,"JULIO":60000,"AGOSTO":60000,"SEPTIEMBRE":60000,"OCTUBRE":60000,"NOVIEMBRE":60000,"DICIEMBRE":60000}}];
+
+const CUOTAS_HIST = { 2024: CUOTAS_2024, 2025: CUOTAS_2025, 2026: PROPIETARIOS };
+
+const GASTOS_2024 = [{"fecha":"2024-01-02","concepto":"Servicios publicos Enero","valor":66412,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-01-13","concepto":"Revision motores porton","valor":150000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-01-14","concepto":"Arreglo luminarias","valor":100000,"categoria":"ILUMINACION"},{"fecha":"2024-01-24","concepto":"Compra reflector puerta","valor":56000,"categoria":"ILUMINACION"},{"fecha":"2024-02-16","concepto":"Compra 6 postes de madera","valor":700000,"categoria":"ILUMINACION"},{"fecha":"2024-02-17","concepto":"Pago sevicios publicos","valor":142947,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-03-21","concepto":"Pago sevicios publicos","valor":71731,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-04-06","concepto":"Compra randal para fumigacion","valor":104000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-04-08","concepto":"Pago fumigacion ","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-04-18","concepto":"Instalacion camaras de seguridad","valor":1676000,"categoria":"CAMARAS SEGURIDAD"},{"fecha":"2024-04-19","concepto":"Compra pintura vareta","valor":21000,"categoria":"ILUMINACION"},{"fecha":"2024-04-23","concepto":"Compra regulado de voltaje para DVR","valor":65000,"categoria":"CAMARAS SEGURIDAD"},{"fecha":"2024-04-29","concepto":"Pago aseo enero-abril","valor":120000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-04-29","concepto":"Pago excavacion poste, descopada arbol","valor":120000,"categoria":"ILUMINACION"},{"fecha":"2024-05-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-05-11","concepto":"Pago arreglo electrico contador fotocelda","valor":100000,"categoria":"ILUMINACION"},{"fecha":"2024-05-13","concepto":"Compra reflector quemado","valor":60000,"categoria":"ILUMINACION"},{"fecha":"2024-05-13","concepto":"Pago rozada manual","valor":120000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-05-14","concepto":"Compra contactor porton ","valor":136800,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-05-14","concepto":"Compra tarjea conrtol Puerta","valor":90000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-05-15","concepto":"Cambio de contactor e instalacion tarjeta","valor":100000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-05-24","concepto":"Donacion dia de Madres parroquia ","valor":100000,"categoria":"DONACIONES"},{"fecha":"2024-06-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-06-06","concepto":"Compra microsuiches Puerta","valor":56000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-06-08","concepto":"Compra reles Puerta","valor":34000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-06-08","concepto":"Pago reparacion sistema Puerta","valor":150000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-06-10","concepto":"Pago aseo mayo-junio","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-06-28","concepto":"Compra randal para fumigacion","valor":80000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-06-29","concepto":"Pago fumigacion randal","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-07-04","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-07-25","concepto":"Pago sevicios publicos 3 meses atrasados (","valor":311894,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-07-26","concepto":"Compra 4 reflectores y  100 mts de cable para iluminación ","valor":817000,"categoria":"ILUMINACION"},{"fecha":"2024-07-28","concepto":"Compra 2 reflectores y  12 mts de cable para iluminación ","valor":220000,"categoria":"ILUMINACION"},{"fecha":"2024-07-28","concepto":"instalacion reflectores (6 unidades)","valor":220000,"categoria":"ILUMINACION"},{"fecha":"2024-07-28","concepto":"Pago Nelson A. domicilio bello compras","valor":80000,"categoria":"ILUMINACION"},{"fecha":"2024-08-04","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-08-24","concepto":"Compra 2 reflectores y  8 mts de cable para iluminación ","valor":198000,"categoria":"ILUMINACION"},{"fecha":"2024-08-25","concepto":"Instalacion reflectores (2 unidades)","valor":100000,"categoria":"ILUMINACION"},{"fecha":"2024-08-30","concepto":"Pago sevicios publicos Sept","valor":91686,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-09-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-09-06","concepto":"Compra randal para fumigacion","valor":30000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-09-09","concepto":"Pago fumicacion","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-09-12","concepto":"Copia llaves motores","valor":10000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-09-13","concepto":"Compra plantas para jardineras","valor":36000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-09-13","concepto":"Compra reflector cuarto de basuras","valor":56100,"categoria":"ILUMINACION"},{"fecha":"2024-09-27","concepto":"Compra plantas para jardineras","valor":54000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-10-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-10-10","concepto":"Donacion para roceria vereda","valor":60000,"categoria":"DONACIONES"},{"fecha":"2024-10-17","concepto":"Pago guiadañada (Alejandro Carmona)","valor":150000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-10-25","concepto":"Compra sensor cuarto de basuras","valor":19500,"categoria":"ILUMINACION"},{"fecha":"2024-10-26","concepto":"Compra plantas para jardineras","valor":50000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-10-27","concepto":"Pago bloqueo por corte de energia","valor":30000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-10-27","concepto":"Pago jardineria (Señora Bernarda)","valor":30000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-10-30","concepto":"Pago sevicios publicos Octubre","valor":94135,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-11-28","concepto":"Compra herbicida para fumigacion","valor":80000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-12-08","concepto":"Pago semestre mantenimiento y limpieza cuarto de basuras","valor":180000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-12-08","concepto":"Aguinaldo señora bernarda","valor":100000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-12-13","concepto":"Pago semestre operarios copaseo","valor":250000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-11-28","concepto":"Pago fumigacion herbicida nuevo","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2024-12-02","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-11-29","concepto":"Pago bloqueo \"sin responsable\"","valor":30000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2024-12-01","concepto":"Pago servicios noviembre","valor":96119,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2024-12-23","concepto":"Donaciones JAC y comité parroquia","valor":200000,"categoria":"DONACIONES"},{"fecha":"2024-12-31","concepto":"Pago servicios diciembre","valor":92665,"categoria":"SCIOS PUBLICOS E INTERNET"}];
+
+const GASTOS_2025 = [{"fecha":"2025-01-04","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-01-19","concepto":"Guadañada","valor":200000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-02-04","concepto":"Pago servicios publicos febrero 4 feb","valor":98532,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-02-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-03-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-03-05","concepto":"Compra plantas (uña de gato) para talud","valor":68000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-03-05","concepto":"Pago sembrada de plantas en talud","valor":60000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-04-02","concepto":"Pago servicios publicos Abril 2","valor":97872,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-04-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-04-12","concepto":"Donacion capilla","valor":100000,"categoria":"DONACIONES"},{"fecha":"2025-05-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-05-06","concepto":"Pago servicios publicos mayo","valor":97000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-05-14","concepto":"Pago maquina raspado antes de rieles","valor":500000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-05-23","concepto":"Compra 4 reflectores 200 W","valor":271999,"categoria":"ILUMINACION"},{"fecha":"2025-05-30","concepto":"Pago mantenimiento cuarto de basuras","valor":200000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-05-30","concepto":"Pago segundo trimestre aseo cuarto de basuras","valor":180000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-05-30","concepto":"Pago recoleccion y demolicion de piedra","valor":120000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-01","concepto":"Compra cemento obra rieles","valor":2560000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-06-06","concepto":"Pago recoleccion y demolicion de piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-19","concepto":"Pago servicios publicos Junio-Julio","valor":184076,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-06-20","concepto":"Gaseosas combite roseria","valor":15000,"categoria":"DONACIONES"},{"fecha":"2025-06-20","concepto":"Pago Lisimaco recoleccion y demolicion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-21","concepto":"Gasolina combite roseria vereda","valor":32000,"categoria":"DONACIONES"},{"fecha":"2025-06-23","concepto":"Pago Lisimaco recoleccion y demolicion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-24","concepto":"Pago Lisimaco recoleccion y demolicion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-06-28","concepto":"Pago arreglo cerca y recoleccion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-07-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-07-05","concepto":"Pago cambio de reflectores","valor":110000,"categoria":"ILUMINACION"},{"fecha":"2025-07-06","concepto":"Pago bloqueo puerta","valor":30000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-07-08","concepto":"Pago Lisimaco recoleccion y demolicion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-07-09","concepto":"Pago Lisimaco recoleccion y demolicion piedra","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-07-11","concepto":"Neumatico carreta obra rieles","valor":15000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-07-12","concepto":"Compra fotocelda para reflectores","valor":20000,"categoria":"ILUMINACION"},{"fecha":"2025-07-16","concepto":"Compra hierro los fierros obra rieles","valor":2706225,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-08-05","concepto":"Compra maderas madepinos obra rieles","valor":1044375,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-07","concepto":"Pago servicios publicos Agosto","valor":101650,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-08-13","concepto":"Compra tarros-plastico-clavos-nylon-discos","valor":111303,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-16","concepto":"Trasporte hierro-madera cemento","valor":400000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-16","concepto":"Triturado + arena+viaje 3 volquetas","valor":3030000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-17","concepto":"Pago trabajo 2 oficiales 2dias","valor":640000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-17","concepto":"Alquiler coches-extensiones-maquina","valor":230000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-17","concepto":"Refrigerio cervezas","valor":148000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-17","concepto":"Refrigerio pollos","valor":200000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-17","concepto":"Refrigerio (aguardiente)","valor":150000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-18","concepto":"Compra cemento adicional obra rieles","valor":770000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-20","concepto":"Pago desencofrada rieles","valor":60000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-08-20","concepto":"Viaje entrega maquinas y equipos","valor":50000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-09-03","concepto":"Donacion cemento carretera vereda (Canilo guiral)","valor":105000,"categoria":"DONACIONES"},{"fecha":"2025-09-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-09-09","concepto":"Pago servicios publicos septiembre","valor":109537,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-09-15","concepto":"Guadañada","valor":200000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-09-29","concepto":"Pago cambio de fotocelda (Felipe M.)","valor":40000,"categoria":"ILUMINACION"},{"fecha":"2025-10-04","concepto":"Pago cementoo prestado por Estela correa","valor":245000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-10-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-10-05","concepto":"Pago servicios publicos octubre","valor":105971,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-11-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-11-08","concepto":"Pago lisimaco \"cuña\" tierra rieles nuevos","valor":120000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2025-11-09","concepto":"Pago servicios publicos noviembre","valor":113452,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-12-05","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-12-01","concepto":"Pago servicios publicos diciembre","valor":112571,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2025-12-20","concepto":"Pago Doña bernarda (aseo sitio disposicion basuras)","valor":280000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-12-21","concepto":"Compra contactor para reparar porton","valor":46000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-12-21","concepto":"Compra 2 microswiches porton","valor":56000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-12-23","concepto":"Compra contactor para reparar porton","valor":120000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-12-23","concepto":"Donacion capilla (helados)","valor":100000,"categoria":"DONACIONES"},{"fecha":"2025-12-23","concepto":"Donacion accion comunal (heñlados)","valor":100000,"categoria":"DONACIONES"},{"fecha":"2025-12-24","concepto":"Pago personal de copaseo","valor":300000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-12-26","concepto":"Guadañada","valor":200000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2025-12-28","concepto":"Refuerzo soldadura porton","valor":130000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-12-29","concepto":"Reparacion de porton (electricista)","valor":200000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2025-12-30","concepto":"Pago apoyo administracion (Nelson Araque)","valor":300000,"categoria":"DEUDAS ADMON"}];
+
+const GASTOS_2026 = [{"fecha":"2025-07-10","concepto":"Pago servicios publicos Julio","valor":84517,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-01-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-01-07","concepto":"Pago servicios publicos Enero","valor":113640,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-01-29","concepto":"Anticipo cambio de soportes y pivotes porton","valor":300000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-02-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-02-04","concepto":"Cambio soportes y pivotes puerta","valor":300000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-02-05","concepto":"Pago servicios publicos febrero","valor":117540,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-02-14","concepto":"Instalacion motores porton","valor":600000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-02-14","concepto":"3 dias de trabajo en rieles (cuñando con tierra)","valor":180000,"categoria":"PROYECTO RIELES 2025"},{"fecha":"2026-02-14","concepto":"Sirena luz+sonido para porton","valor":100000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-03-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-03-05","concepto":"Pago servicios publicos marzo","valor":110124,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-04-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-04-06","concepto":"Pago servicios publicos abril","valor":99192,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-04-15","concepto":"Refuerzo estructural porton","valor":150000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-05-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-05-03","concepto":"Pago internet energia DVR a A. Lopez","valor":50000,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-05-06","concepto":"Pago servicios publicos Mayo","valor":82666,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-05-14","concepto":"Donacion dia de la madre capilla","valor":100000,"categoria":"DONACIONES"},{"fecha":"2026-05-28","concepto":"Visita tecnico camaras","valor":50000,"categoria":"CAMARAS SEGURIDAD"},{"fecha":"2026-05-30","concepto":"Compra cable UTP 100% cobre","valor":220000,"categoria":"CAMARAS SEGURIDAD"},{"fecha":"2026-06-05","concepto":"Pago tecnico camaras reparacion","valor":120000,"categoria":"CAMARAS SEGURIDAD"},{"fecha":"2026-06-08","concepto":"Pago servicios publicos Junio","valor":85168,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-06-18","concepto":"Pago semestre aseo Doña Bernarda","valor":200000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2026-06-24","concepto":"fab para aseo chut basuras y electricos tomas porteria","valor":70000,"categoria":"ILUMINACION"},{"fecha":"2026-06-25","concepto":"Electricista, cambio cables y fotocelda por robo","valor":180000,"categoria":"ILUMINACION"},{"fecha":"2026-06-26","concepto":"Compra cables y fotoceldas","valor":45000,"categoria":"ILUMINACION"},{"fecha":"2026-07-30","concepto":"Pago soldadura porton (soportes motor)","valor":50000,"categoria":"MANTENIMIENTO PORTON"},{"fecha":"2026-08-06","concepto":"Pago servicios publicos Agosto","valor":82873,"categoria":"SCIOS PUBLICOS E INTERNET"},{"fecha":"2026-08-08","concepto":"Gasolina y aceite para guadañada","valor":47000,"categoria":"JARDINERIA Y ASEO"},{"fecha":"2026-08-15","concepto":"Pago guadañada Don Jose","valor":350000,"categoria":"JARDINERIA Y ASEO"}];
+
+const GASTOS_HIST = { 2024: GASTOS_2024, 2025: GASTOS_2025, 2026: GASTOS_2026 };
+
+const ANIO_ACTUAL = new Date().getFullYear();
+const ANIOS_DISPONIBLES = [2024, 2025, 2026];
+
+const CATEGORIAS_SUGERENCIA = [
+  "Convivencia",
+  "Proyectos a futuro",
+  "Información importante",
+  "Temas de seguridad"
+];
+
+/* =========================================================
+   ALMACENAMIENTO LOCAL (localStorage del equipo)
+   ========================================================= */
+
+const CLAVE_INGRESOS = "altosSabaneta_ingresos";
+const CLAVE_EGRESOS  = "altosSabaneta_egresos";
+const CLAVE_SUGERENCIAS = "altosSabaneta_sugerencias";
+
+function leerIngresos() {
+  return JSON.parse(localStorage.getItem(CLAVE_INGRESOS) || "[]");
+}
+function guardarIngresoLocal(registro) {
+  const lista = leerIngresos();
+  lista.push(registro);
+  localStorage.setItem(CLAVE_INGRESOS, JSON.stringify(lista));
+}
+function leerEgresos() {
+  return JSON.parse(localStorage.getItem(CLAVE_EGRESOS) || "[]");
+}
+function guardarEgresoLocal(registro) {
+  const lista = leerEgresos();
+  lista.push(registro);
+  localStorage.setItem(CLAVE_EGRESOS, JSON.stringify(lista));
+}
+function leerSugerencias() {
+  return JSON.parse(localStorage.getItem(CLAVE_SUGERENCIAS) || "[]");
+}
+function guardarSugerenciaLocal(registro) {
+  const lista = leerSugerencias();
+  lista.push(registro);
+  localStorage.setItem(CLAVE_SUGERENCIAS, JSON.stringify(lista));
+}
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
+function formatoCOP(valor) {
+  return "$" + Math.round(valor).toLocaleString("es-CO");
+}
+function formatoCorto(valor) {
+  const v = Math.round(valor);
+  if (Math.abs(v) >= 1000000) return "$" + (v/1000000).toFixed(1) + "M";
+  if (Math.abs(v) >= 1000) return "$" + Math.round(v/1000) + "k";
+  return "$" + v;
+}
+function fechaHoy() {
+  return new Date();
+}
+function fechaTexto(f) {
+  const dd = String(f.getDate()).padStart(2,"0");
+  const mm = String(f.getMonth()+1).padStart(2,"0");
+  const yyyy = f.getFullYear();
+  return dd + "/" + mm + "/" + yyyy;
+}
+function calcularRecargo(f) {
+  const dia = f.getDate();
+  return dia > 5 ? (dia - 5) * 1000 : 0;
+}
+
+/* Estado combinado del Excel + lo ya registrado localmente en este equipo (año actual) */
+function estadoMeses(propietario) {
+  const ingresosLocales = leerIngresos().filter(r => r.finca === propietario.finca);
+  return MESES.map(mes => {
+    const valorExcel = propietario.meses[mes];
+    const local = ingresosLocales.find(r => r.mes === mes);
+    if (valorExcel !== null && valorExcel !== undefined) {
+      return { mes, pagado: true, origen: "excel", valor: valorExcel };
+    }
+    if (local) {
+      return { mes, pagado: true, origen: "local", valor: local.total };
+    }
+    return { mes, pagado: false };
+  });
+}
+
+/* =========================================================
+   NAVEGACION (menu lateral)
+   ========================================================= */
+function mostrarSeccion(tab) {
+  document.getElementById("tabIngresos").classList.toggle("oculto", tab !== "ingresos");
+  document.getElementById("tabEgresos").classList.toggle("oculto", tab !== "egresos");
+  document.getElementById("tabTablero").classList.toggle("oculto", tab !== "tablero");
+  document.getElementById("tabSugerencias").classList.toggle("oculto", tab !== "sugerencias");
+  document.getElementById("menuIngresos").classList.toggle("active", tab === "ingresos");
+  document.getElementById("menuEgresos").classList.toggle("active", tab === "egresos");
+  document.getElementById("menuTablero").classList.toggle("active", tab === "tablero");
+  document.getElementById("menuSugerencias").classList.toggle("active", tab === "sugerencias");
+  if (tab === "tablero") renderTablero();
+  if (tab === "sugerencias") renderSugerencias();
+}
+
+/* =========================================================
+   INGRESOS - PROPIETARIOS  (sin cambios de comportamiento)
+   ========================================================= */
+let propietarioSeleccionado = null;
+
+function filtrarPropietarios() {
+  const texto = document.getElementById("buscador").value.trim().toLowerCase();
+  const lista = document.getElementById("listaPropietarios");
+  lista.innerHTML = "";
+  const filtrados = PROPIETARIOS.filter(p =>
+    p.nombre.toLowerCase().includes(texto) || p.finca.toLowerCase().includes(texto)
+  ).sort((a,b) => a.nombre.localeCompare(b.nombre));
+
+  filtrados.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "owner-item" + (propietarioSeleccionado && propietarioSeleccionado.finca === p.finca ? " selected" : "");
+    div.innerHTML = '<span class="finca-tag">Finca ' + p.finca + '</span>' + p.nombre;
+    div.onclick = () => seleccionarPropietario(p.finca);
+    lista.appendChild(div);
+  });
+}
+
+function seleccionarPropietario(finca) {
+  propietarioSeleccionado = PROPIETARIOS.find(p => p.finca === finca);
+  document.getElementById("mensajeIngresoOk").style.display = "none";
+  filtrarPropietarios();
+  renderDetallePropietario();
+}
+
+function renderDetallePropietario() {
+  const p = propietarioSeleccionado;
+  if (!p) return;
+  document.getElementById("detallePropietario").classList.remove("oculto");
+  document.getElementById("nombrePropietarioSel").textContent = p.nombre;
+  document.getElementById("fincaPropietarioSel").textContent = "Finca N.º " + p.finca + " · Cuota mensual asignada: " + formatoCOP(CUOTA_MENSUAL);
+
+  const estados = estadoMeses(p);
+
+  const filaMeses = document.getElementById("filaMeses");
+  const filaEstados = document.getElementById("filaEstados");
+  filaMeses.innerHTML = "";
+  filaEstados.innerHTML = "";
+  estados.forEach(e => {
+    const th = document.createElement("th");
+    th.textContent = e.mes.substring(0,3);
+    filaMeses.appendChild(th);
+
+    const td = document.createElement("td");
+    td.className = e.pagado ? "pagado" : "pendiente";
+    td.textContent = e.pagado ? "Pagado" : "Falta";
+    filaEstados.appendChild(td);
+  });
+
+  renderZonaPago(estados);
+}
+
+function renderZonaPago(estados) {
+  const zona = document.getElementById("zonaPago");
+  const pendientes = estados.filter(e => !e.pagado);
+
+  if (pendientes.length === 0) {
+    zona.innerHTML = '<div class="sin-pendientes">Este propietario está al día. No hay meses pendientes por cobrar.</div>';
+    return;
+  }
+
+  const hoy = fechaHoy();
+  const recargo = calcularRecargo(hoy);
+  const total = CUOTA_MENSUAL + recargo;
+
+  let html = '<label>Mes que se va a cobrar</label>';
+  html += '<select id="mesSeleccionado" onchange="actualizarValorPago()">';
+  pendientes.forEach(e => {
+    html += '<option value="' + e.mes + '">' + e.mes + '</option>';
+  });
+  html += '</select>';
+
+  html += '<div class="valor-box">';
+  html += 'Fecha de registro (hoy): <strong>' + fechaTexto(hoy) + '</strong><br>';
+  html += 'Cuota de administración: ' + formatoCOP(CUOTA_MENSUAL) + '<br>';
+  if (recargo > 0) {
+    html += 'Recargo por mora (' + (hoy.getDate()-5) + ' días de retraso x $1.000): ' + formatoCOP(recargo) + '<br>';
+  } else {
+    html += 'Recargo por mora: ' + formatoCOP(0) + ' (registrado dentro de los primeros 5 días del mes)<br>';
+  }
+  html += '<div class="total">Total a cobrar: ' + formatoCOP(total) + '</div>';
+  html += '</div>';
+
+  html += '<button class="accion" onclick="cobrarCuota()">Cobrar</button>';
+
+  zona.innerHTML = html;
+}
+
+function actualizarValorPago() {
+  // El valor (cuota + recargo por fecha de hoy) no cambia según el mes elegido,
+  // por lo tanto no requiere recálculo adicional al cambiar el mes.
+}
+
+function cobrarCuota() {
+  const p = propietarioSeleccionado;
+  const mes = document.getElementById("mesSeleccionado").value;
+  const hoy = fechaHoy();
+  const recargo = calcularRecargo(hoy);
+  const total = CUOTA_MENSUAL + recargo;
+
+  const registro = {
+    finca: p.finca,
+    nombre: p.nombre,
+    mes: mes,
+    fecha: fechaTexto(hoy),
+    cuota: CUOTA_MENSUAL,
+    recargo: recargo,
+    total: total,
+    anio: hoy.getFullYear()
+  };
+  guardarIngresoLocal(registro);
+
+  const msj = document.getElementById("mensajeIngresoOk");
+  msj.style.display = "block";
+  msj.textContent = "Cuota de " + mes + " registrada para " + p.nombre + " por " + formatoCOP(total) + ".";
+
+  renderDetallePropietario();
+  renderLogIngresos();
+  renderTablero();
+}
+
+function renderLogIngresos() {
+  const lista = leerIngresos().slice().reverse();
+  const cont = document.getElementById("logIngresos");
+  if (lista.length === 0) {
+    cont.innerHTML = '<p class="nota">Aún no hay cuotas registradas localmente.</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Fecha</th><th>Finca</th><th>Propietario</th><th>Mes</th><th>Total</th></tr></thead><tbody>';
+  lista.forEach(r => {
+    html += '<tr><td>' + r.fecha + '</td><td>' + r.finca + '</td><td>' + r.nombre + '</td><td>' + r.mes + '</td><td>' + formatoCOP(r.total) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+/* =========================================================
+   EGRESOS - ADMINISTRADOR  (sin cambios de comportamiento)
+   ========================================================= */
+
+function inicializarEgresos() {
+  document.getElementById("fechaGasto").value = fechaTexto(fechaHoy());
+  const sel = document.getElementById("categoriaGasto");
+  CATEGORIAS.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function guardarGasto() {
+  const categoria = document.getElementById("categoriaGasto").value;
+  const concepto = document.getElementById("conceptoGasto").value.trim();
+  const valor = parseFloat(document.getElementById("valorGasto").value);
+
+  if (!categoria) { alert("Seleccione una categoría."); return; }
+  if (!concepto) { alert("Escriba el concepto del gasto."); return; }
+  if (!valor || valor <= 0) { alert("Ingrese un valor válido."); return; }
+
+  const hoy = fechaHoy();
+  const registro = {
+    fecha: fechaTexto(hoy),
+    fechaISO: hoy.toISOString().slice(0,10),
+    categoria: categoria,
+    concepto: concepto,
+    valor: valor,
+    anio: hoy.getFullYear()
+  };
+  guardarEgresoLocal(registro);
+
+  document.getElementById("categoriaGasto").value = "";
+  document.getElementById("conceptoGasto").value = "";
+  document.getElementById("valorGasto").value = "";
+
+  const msj = document.getElementById("mensajeGastoOk");
+  msj.style.display = "block";
+  msj.textContent = "Gasto registrado: " + registro.concepto + " por " + formatoCOP(registro.valor) + ".";
+
+  renderLogEgresos();
+  renderTablero();
+}
+
+function renderLogEgresos() {
+  const lista = leerEgresos().slice().reverse();
+  const cont = document.getElementById("logEgresos");
+  if (lista.length === 0) {
+    cont.innerHTML = '<p class="nota">Aún no hay gastos registrados localmente.</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Fecha</th><th>Categoría</th><th>Concepto</th><th>Valor</th></tr></thead><tbody>';
+  lista.forEach(r => {
+    html += '<tr><td>' + r.fecha + '</td><td>' + r.categoria + '</td><td>' + r.concepto + '</td><td>' + formatoCOP(r.valor) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+/* =========================================================
+   SUGERENCIAS
+   ========================================================= */
+
+function inicializarSugerencias() {
+  const sel = document.getElementById("categoriaSugerencia");
+  CATEGORIAS_SUGERENCIA.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+
+  const filtro = document.getElementById("filtroCategoriaSugerencia");
+  CATEGORIAS_SUGERENCIA.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    filtro.appendChild(opt);
+  });
+}
+
+function guardarSugerencia() {
+  const categoria = document.getElementById("categoriaSugerencia").value;
+  const autor = document.getElementById("autorSugerencia").value.trim();
+  const mensaje = document.getElementById("mensajeSugerencia").value.trim();
+
+  if (!categoria) { alert("Seleccione una categoría."); return; }
+  if (!mensaje) { alert("Escriba la sugerencia."); return; }
+
+  const hoy = fechaHoy();
+  const registro = {
+    fecha: fechaTexto(hoy),
+    fechaISO: hoy.toISOString().slice(0,10),
+    categoria: categoria,
+    autor: autor || "Anónimo",
+    mensaje: mensaje,
+    anio: hoy.getFullYear()
+  };
+  guardarSugerenciaLocal(registro);
+
+  document.getElementById("categoriaSugerencia").value = "";
+  document.getElementById("autorSugerencia").value = "";
+  document.getElementById("mensajeSugerencia").value = "";
+
+  const msj = document.getElementById("mensajeSugerenciaOk");
+  msj.style.display = "block";
+  msj.textContent = "Sugerencia registrada en la categoría " + registro.categoria + ".";
+
+  renderSugerencias();
+}
+
+/* Toda búsqueda es por coincidencia de texto (un pedazo encuentra el resultado) */
+function renderSugerencias() {
+  const texto = (document.getElementById("buscadorSugerencias").value || "").trim().toLowerCase();
+  const catSel = document.getElementById("filtroCategoriaSugerencia").value;
+
+  let lista = leerSugerencias().slice().reverse();
+
+  if (catSel !== "todas") {
+    lista = lista.filter(s => s.categoria === catSel);
+  }
+  if (texto) {
+    lista = lista.filter(s =>
+      s.mensaje.toLowerCase().includes(texto) ||
+      s.autor.toLowerCase().includes(texto) ||
+      s.categoria.toLowerCase().includes(texto)
+    );
+  }
+
+  const cont = document.getElementById("logSugerencias");
+  if (lista.length === 0) {
+    cont.innerHTML = '<p class="nota">Aún no hay sugerencias registradas localmente.</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>Fecha</th><th>Categoría</th><th>Propietario / finca</th><th>Sugerencia</th></tr></thead><tbody>';
+  lista.forEach(s => {
+    html += '<tr><td>' + s.fecha + '</td><td>' + s.categoria + '</td><td>' + s.autor + '</td><td>' + s.mensaje + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  cont.innerHTML = html;
+}
+
+/* Genera un archivo Excel (formato XML de hoja de cálculo) con todas las sugerencias guardadas.
+   Se descarga en el equipo; desde ahí se guarda o se copia a la carpeta EJERCICIO OSCAR MARTINEZ
+   para el análisis posterior, tal como pide la plantilla "Sugerencias Altos de Sabaneta.xlsx". */
+function escaparXML(txt) {
+  return String(txt)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function exportarSugerenciasExcel() {
+  const lista = leerSugerencias();
+  if (lista.length === 0) { alert("No hay sugerencias registradas para exportar."); return; }
+
+  let filas = '';
+  filas += '<Row><Cell><Data ss:Type="String">FECHA</Data></Cell><Cell><Data ss:Type="String">CATEGORIA</Data></Cell><Cell><Data ss:Type="String">PROPIETARIO O FINCA</Data></Cell><Cell><Data ss:Type="String">SUGERENCIA</Data></Cell></Row>';
+  lista.forEach(s => {
+    filas += '<Row>' +
+      '<Cell><Data ss:Type="String">' + escaparXML(s.fecha) + '</Data></Cell>' +
+      '<Cell><Data ss:Type="String">' + escaparXML(s.categoria) + '</Data></Cell>' +
+      '<Cell><Data ss:Type="String">' + escaparXML(s.autor) + '</Data></Cell>' +
+      '<Cell><Data ss:Type="String">' + escaparXML(s.mensaje) + '</Data></Cell>' +
+      '</Row>';
+  });
+
+  const xml = '<?xml version="1.0"?>' +
+    '<?mso-application progid="Excel.Sheet"?>' +
+    '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">' +
+    '<Worksheet ss:Name="SUGERENCIAS"><Table>' + filas + '</Table></Worksheet>' +
+    '</Workbook>';
+
+  const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Sugerencias Altos de Sabaneta.xls";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   TABLERO
+   ========================================================= */
+
+function pagosDeAnio(anio) {
+  const propietariosAnio = CUOTAS_HIST[anio] || [];
+  const pagos = [];
+  propietariosAnio.forEach(p => {
+    MESES.forEach(mes => {
+      const v = p.meses[mes];
+      if (v !== null && v !== undefined) {
+        pagos.push({ finca: p.finca, nombre: p.nombre, mes: mes, cuota: v, recargo: 0, total: v, origen: "excel" });
+      }
+    });
+  });
+  if (anio === ANIO_ACTUAL) {
+    leerIngresos().forEach(r => {
+      const anioReg = r.anio || ANIO_ACTUAL;
+      if (anioReg !== anio) return;
+      const p = propietariosAnio.find(x => x.finca === r.finca);
+      const yaEnExcel = p && p.meses[r.mes] !== null && p.meses[r.mes] !== undefined;
+      if (!yaEnExcel) {
+        pagos.push({ finca: r.finca, nombre: r.nombre, mes: r.mes, cuota: r.cuota, recargo: r.recargo, total: r.total, origen: "local" });
+      }
+    });
+  }
+  return pagos;
+}
+
+function mesDeGasto(g) {
+  const iso = g.fechaISO || g.fecha;
+  const d = new Date(iso + "T00:00:00");
+  return MESES[d.getMonth()];
+}
+
+function gastosDeAnio(anio) {
+  const base = (GASTOS_HIST[anio] || []).map(g => ({ fecha: g.fecha, concepto: g.concepto, valor: g.valor, categoria: g.categoria, origen: "excel" }));
+  let locales = [];
+  if (anio === ANIO_ACTUAL) {
+    locales = leerEgresos().filter(e => (e.anio || ANIO_ACTUAL) === anio).map(e => ({ fecha: e.fechaISO || null, concepto: e.concepto, valor: e.valor, categoria: e.categoria, origen: "local" }));
+  }
+  return base.concat(locales);
+}
+
+function calcularEstadoActualPorFinca() {
+  const hoy = fechaHoy();
+  const mesActualIdx = hoy.getMonth();
+  const resultado = {};
+  PROPIETARIOS.forEach(p => {
+    const estados = estadoMeses(p);
+    let moroso = false;
+    for (let i = 0; i <= mesActualIdx; i++) {
+      if (!estados[i].pagado) { moroso = true; break; }
+    }
+    resultado[p.finca] = moroso ? "moroso" : "aldia";
+  });
+  return resultado;
+}
+
+function inicializarTablero() {
+  const selAnio = document.getElementById("fAnio");
+  selAnio.innerHTML = '<option value="todos">Todos</option>' + ANIOS_DISPONIBLES.map(a => '<option value="'+a+'">'+a+'</option>').join("");
+  selAnio.value = String(ANIO_ACTUAL);
+  if (selAnio.value !== String(ANIO_ACTUAL)) selAnio.value = "todos";
+
+  const selMes = document.getElementById("fMes");
+  selMes.innerHTML = '<option value="todos">Todos</option>' + MESES.map(m => '<option value="'+m+'">'+m+'</option>').join("");
+}
+
+function svgBarras(labels, valores, opciones) {
+  opciones = opciones || {};
+  const alto = opciones.alto || 190;
+  const colores = opciones.colores || ["#2c7be5"];
+  const formateador = opciones.formateador || formatoCorto;
+  const anchoCol = 64;
+  const W = Math.max(340, labels.length * anchoCol);
+  const H = alto;
+  const margenInferior = 42;
+  const margenSuperior = 24;
+  const areaAlto = H - margenInferior - margenSuperior;
+  const max = Math.max(1, ...valores.map(v => Math.abs(v)));
+  let svg = "";
+  labels.forEach((lab, i) => {
+    const v = valores[i];
+    const hBarra = max > 0 ? (Math.abs(v) / max) * areaAlto : 0;
+    const colW = W / labels.length;
+    const x = i * colW + colW * 0.18;
+    const anchoB = colW * 0.64;
+    const y = margenSuperior + (areaAlto - hBarra);
+    const color = colores[i % colores.length];
+    svg += '<rect x="'+x+'" y="'+y+'" width="'+anchoB+'" height="'+hBarra+'" fill="'+color+'" rx="3"><title>'+lab+': '+formatoCOP(v)+'</title></rect>';
+    if (v !== 0) {
+      svg += '<text x="'+(x+anchoB/2)+'" y="'+(y-5)+'" font-size="10" text-anchor="middle" fill="#333">'+formateador(v)+'</text>';
+    }
+    svg += '<text x="'+(x+anchoB/2)+'" y="'+(H-margenInferior+15)+'" font-size="10" text-anchor="middle" fill="#555">'+lab+'</text>';
+  });
+  svg += '<line x1="0" y1="'+(H-margenInferior)+'" x2="'+W+'" y2="'+(H-margenInferior)+'" stroke="#ddd"/>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMinYMid meet" style="width:100%;height:'+H+'px;">'+svg+'</svg>';
+}
+
+function renderTablero() {
+  const anioSel = document.getElementById("fAnio").value;
+  const mesSel = document.getElementById("fMes").value;
+  const busqueda = document.getElementById("fBusqueda").value.trim().toLowerCase();
+  const estadoSel = document.getElementById("fEstado").value;
+
+  const anios = anioSel === "todos" ? ANIOS_DISPONIBLES : [parseInt(anioSel)];
+  const estadoPorFinca = calcularEstadoActualPorFinca();
+
+  let pagos = [];
+  anios.forEach(a => { pagos = pagos.concat(pagosDeAnio(a)); });
+  if (mesSel !== "todos") pagos = pagos.filter(p => p.mes === mesSel);
+  if (busqueda) pagos = pagos.filter(p => p.nombre.toLowerCase().includes(busqueda) || p.finca.toLowerCase().includes(busqueda));
+  if (estadoSel !== "todos") pagos = pagos.filter(p => estadoPorFinca[p.finca] === estadoSel);
+
+  let gastos = [];
+  anios.forEach(a => { gastos = gastos.concat(gastosDeAnio(a)); });
+  if (mesSel !== "todos") gastos = gastos.filter(g => (g.fechaISO || g.fecha) && mesDeGasto(g) === mesSel);
+
+  // Chips: cuotas vs moras
+  const sumaCuotas = pagos.reduce((s,p) => s + p.cuota, 0);
+  const sumaMoras = pagos.reduce((s,p) => s + p.recargo, 0);
+  document.getElementById("chipCuotas").textContent = formatoCOP(sumaCuotas);
+  document.getElementById("chipMoras").textContent = formatoCOP(sumaMoras);
+
+  // KPIs
+  const totalRecaudos = pagos.reduce((s,p) => s + p.total, 0);
+  const totalGastos = gastos.reduce((s,g) => s + g.valor, 0);
+  let proyectado = 0;
+  if (anios.includes(ANIO_ACTUAL)) {
+    PROPIETARIOS.forEach(p => {
+      if (busqueda && !(p.nombre.toLowerCase().includes(busqueda) || p.finca.toLowerCase().includes(busqueda))) return;
+      if (estadoSel !== "todos" && estadoPorFinca[p.finca] !== estadoSel) return;
+      proyectado += estadoMeses(p).filter(e => !e.pagado).length * CUOTA_MENSUAL;
+    });
+  }
+  document.getElementById("kpiRecaudos").textContent = formatoCOP(totalRecaudos);
+  document.getElementById("kpiGastos").textContent = formatoCOP(totalGastos);
+  document.getElementById("kpiProyectado").textContent = formatoCOP(proyectado);
+
+  // Grafico mensual (año en curso, respeta finca/estado)
+  document.getElementById("tituloGraficoMensual").textContent = "Recaudos por mes — año " + ANIO_ACTUAL;
+  const pagosAnioActual = pagosDeAnio(ANIO_ACTUAL).filter(p => {
+    if (busqueda && !(p.nombre.toLowerCase().includes(busqueda) || p.finca.toLowerCase().includes(busqueda))) return false;
+    if (estadoSel !== "todos" && estadoPorFinca[p.finca] !== estadoSel) return false;
+    return true;
+  });
+  const valoresMes = MESES.map(mes => pagosAnioActual.filter(p => p.mes === mes).reduce((s,p) => s + p.total, 0));
+  document.getElementById("graficoMensual").innerHTML = svgBarras(MESES.map(m => m.substring(0,3)), valoresMes, { colores: ["#2c7be5"] });
+
+  // Tabla por propietario
+  const filasProp = PROPIETARIOS.filter(p => {
+    if (busqueda && !(p.nombre.toLowerCase().includes(busqueda) || p.finca.toLowerCase().includes(busqueda))) return false;
+    if (estadoSel !== "todos" && estadoPorFinca[p.finca] !== estadoSel) return false;
+    return true;
+  }).map(p => {
+    const total = pagos.filter(pg => pg.finca === p.finca).reduce((s,pg) => s + pg.total, 0);
+    return { finca: p.finca, nombre: p.nombre, total: total, estado: estadoPorFinca[p.finca] };
+  }).sort((a,b) => b.total - a.total);
+
+  let htmlProp = '<table class="tabla-resumen"><thead><tr><th>Finca</th><th>Propietario</th><th>Total pagado</th><th>Estado</th></tr></thead><tbody>';
+  if (filasProp.length === 0) htmlProp += '<tr><td colspan="4">Sin datos para el filtro seleccionado.</td></tr>';
+  filasProp.forEach(f => {
+    htmlProp += '<tr><td>'+f.finca+'</td><td>'+f.nombre+'</td><td class="num">'+formatoCOP(f.total)+'</td><td class="'+(f.estado==="aldia"?"tag-aldia":"tag-moroso")+'">'+(f.estado==="aldia"?"Al día":"Moroso")+'</td></tr>';
+  });
+  htmlProp += '</tbody></table>';
+  document.getElementById("tablaPropietarios").innerHTML = htmlProp;
+
+  // Resumen por categoria (tabla)
+  const resumenCat = {};
+  CATEGORIAS.forEach(c => { resumenCat[c] = { total: 0, cantidad: 0 }; });
+  gastos.forEach(g => {
+    if (!resumenCat[g.categoria]) resumenCat[g.categoria] = { total: 0, cantidad: 0 };
+    resumenCat[g.categoria].total += g.valor;
+    resumenCat[g.categoria].cantidad += 1;
+  });
+  const filasCat = CATEGORIAS.map(c => ({ categoria: c, total: resumenCat[c].total, cantidad: resumenCat[c].cantidad }))
+    .sort((a,b) => b.total - a.total);
+
+  let htmlCat = '<table class="tabla-resumen"><thead><tr><th>Categoría</th><th>Total</th><th># registros</th></tr></thead><tbody>';
+  filasCat.forEach(f => {
+    htmlCat += '<tr><td>'+f.categoria+'</td><td class="num">'+formatoCOP(f.total)+'</td><td class="num">'+f.cantidad+'</td></tr>';
+  });
+  htmlCat += '</tbody></table>';
+  document.getElementById("tablaCategorias").innerHTML = htmlCat;
+
+  // Grafico barras por categoria (cantidad de unidades)
+  const etiquetasCat = CATEGORIAS.map(c => c.length > 10 ? c.substring(0,9)+"…" : c);
+  const cantidadesCat = CATEGORIAS.map(c => resumenCat[c].cantidad);
+  document.getElementById("graficoCategorias").innerHTML = svgBarrasCantidad(etiquetasCat, cantidadesCat);
+
+  // Grafico comparacion ingresos vs egresos
+  document.getElementById("graficoComparacion").innerHTML = svgBarras(["Recaudos","Egresos"], [totalRecaudos, totalGastos], { colores: ["#1e7e34","#b02a37"] });
+}
+
+function svgBarrasCantidad(labels, valores) {
+  const anchoCol = 64;
+  const W = Math.max(340, labels.length * anchoCol);
+  const H = 190;
+  const margenInferior = 48;
+  const margenSuperior = 20;
+  const areaAlto = H - margenInferior - margenSuperior;
+  const max = Math.max(1, ...valores);
+  let svg = "";
+  labels.forEach((lab, i) => {
+    const v = valores[i];
+    const hBarra = (v / max) * areaAlto;
+    const colW = W / labels.length;
+    const x = i * colW + colW * 0.18;
+    const anchoB = colW * 0.64;
+    const y = margenSuperior + (areaAlto - hBarra);
+    svg += '<rect x="'+x+'" y="'+y+'" width="'+anchoB+'" height="'+hBarra+'" fill="#6c5ce7" rx="3"><title>'+lab+': '+v+' registros</title></rect>';
+    if (v > 0) svg += '<text x="'+(x+anchoB/2)+'" y="'+(y-5)+'" font-size="10" text-anchor="middle" fill="#333">'+v+'</text>';
+    svg += '<text x="'+(x+anchoB/2)+'" y="'+(H-margenInferior+13)+'" font-size="9" text-anchor="middle" fill="#555">'+lab+'</text>';
+  });
+  svg += '<line x1="0" y1="'+(H-margenInferior)+'" x2="'+W+'" y2="'+(H-margenInferior)+'" stroke="#ddd"/>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMinYMid meet" style="width:100%;height:'+H+'px;">'+svg+'</svg>';
+}
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+filtrarPropietarios();
+inicializarEgresos();
+inicializarSugerencias();
+renderLogIngresos();
+renderLogEgresos();
+inicializarTablero();
+mostrarSeccion('tablero');
+</script>
+
+</body>
+</html>
