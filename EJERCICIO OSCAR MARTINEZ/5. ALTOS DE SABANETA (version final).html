@@ -132,6 +132,7 @@
   table.meses th { background: var(--panel-alt); color: var(--text-dim); }
   .pagado { color: #0f5c22; font-weight: bold; background: #e6f9e9; }
   .pendiente { color: #7a1414; font-weight: bold; background: #fbe3e3; }
+  .por-aprobar { color: #8a6d1f; font-weight: bold; background: #fff3cd; }
   .resumen { margin-top: 10px; font-size: 13px; color: var(--text-dim); }
   .valor-box {
     background: var(--panel-alt);
@@ -177,6 +178,26 @@
     color: var(--success);
     font-size: 13px;
   }
+  .aviso-pendiente {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255,193,7,0.12);
+    border: 1px solid #c9980a;
+    border-radius: 8px;
+    color: #c9980a;
+    font-size: 12px;
+  }
+  .btn-aprobar {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-aprobar:hover { background: var(--accent-dark); }
   .registro-log { margin-top: 8px; font-size: 12px; }
   .registro-log table { width: 100%; border-collapse: collapse; }
   .registro-log th, .registro-log td { border: 1px solid var(--border); padding: 5px; text-align: left; }
@@ -616,6 +637,13 @@ function cerrarSesion() {
   document.getElementById("loginError").style.display = "none";
   document.getElementById("appShell").classList.add("oculto");
   document.getElementById("loginScreen").classList.remove("oculto");
+
+  /* Limpia la selección de propietario para que el siguiente usuario que
+     entre (con otro rol) no vea el panel de cobro de la sesión anterior. */
+  propietarioSeleccionado = null;
+  document.getElementById("detallePropietario").classList.add("oculto");
+  document.getElementById("buscador").value = "";
+  document.getElementById("listaPropietarios").innerHTML = "";
 }
 
 function entrarApp(usuario, rol) {
@@ -693,17 +721,23 @@ function calcularRecargo(f) {
   return dia > 5 ? (dia - 5) * 1000 : 0;
 }
 
-/* Estado combinado del Excel + lo ya registrado localmente en este equipo (año actual) */
+/* Estado combinado del Excel + lo ya registrado localmente en este equipo (año actual).
+   Un pago reportado por un propietario queda "pendiente" hasta que el administrador
+   lo aprueba (ver aprobarIngreso); solo entonces cuenta como pagado. */
 function estadoMeses(propietario) {
   const ingresosLocales = leerIngresos().filter(r => r.finca === propietario.finca);
   return MESES.map(mes => {
     const valorExcel = propietario.meses[mes];
-    const local = ingresosLocales.find(r => r.mes === mes);
     if (valorExcel !== null && valorExcel !== undefined) {
       return { mes, pagado: true, origen: "excel", valor: valorExcel };
     }
-    if (local) {
-      return { mes, pagado: true, origen: "local", valor: local.total };
+    const localAprobado = ingresosLocales.find(r => r.mes === mes && (r.estado || "aprobado") === "aprobado");
+    if (localAprobado) {
+      return { mes, pagado: true, origen: "local", valor: localAprobado.total };
+    }
+    const localPendiente = ingresosLocales.find(r => r.mes === mes && r.estado === "pendiente");
+    if (localPendiente) {
+      return { mes, pagado: false, pendiente: true, origen: "local", valor: localPendiente.total };
     }
     return { mes, pagado: false };
   });
@@ -723,6 +757,7 @@ function mostrarSeccion(tab) {
   document.getElementById("menuSugerencias").classList.toggle("active", tab === "sugerencias");
   if (tab === "tablero") renderTablero();
   if (tab === "sugerencias") renderSugerencias();
+  if (tab === "ingresos") renderLogIngresos();
 }
 
 /* =========================================================
@@ -775,8 +810,16 @@ function renderDetallePropietario() {
     filaMeses.appendChild(th);
 
     const td = document.createElement("td");
-    td.className = e.pagado ? "pagado" : "pendiente";
-    td.textContent = e.pagado ? "Pagado" : "Falta";
+    if (e.pagado) {
+      td.className = "pagado";
+      td.textContent = "Pagado";
+    } else if (e.pendiente) {
+      td.className = "por-aprobar";
+      td.textContent = "Por aprobar";
+    } else {
+      td.className = "pendiente";
+      td.textContent = "Falta";
+    }
     filaEstados.appendChild(td);
   });
 
@@ -785,20 +828,29 @@ function renderDetallePropietario() {
 
 function renderZonaPago(estados) {
   const zona = document.getElementById("zonaPago");
-  const pendientes = estados.filter(e => !e.pagado);
+  const porAprobar = estados.filter(e => e.pendiente);
+  const pagables = estados.filter(e => !e.pagado && !e.pendiente);
 
-  if (pendientes.length === 0) {
-    zona.innerHTML = '<div class="sin-pendientes">Este propietario está al día. No hay meses pendientes por cobrar.</div>';
+  let avisoHtml = "";
+  if (porAprobar.length > 0) {
+    avisoHtml = '<div class="aviso-pendiente">Pago(s) reportado(s) en espera de aprobación del administrador: ' +
+      porAprobar.map(e => e.mes + ' (' + formatoCOP(e.valor) + ')').join(', ') + '.</div>';
+  }
+
+  if (pagables.length === 0) {
+    zona.innerHTML = avisoHtml + '<div class="sin-pendientes">Este propietario está al día. No hay meses pendientes por cobrar.</div>';
     return;
   }
 
   const hoy = fechaHoy();
   const recargo = calcularRecargo(hoy);
   const total = CUOTA_MENSUAL + recargo;
+  const esAdmin = (sesionActual() || {}).rol === "admin";
 
-  let html = '<label>Mes que se va a cobrar</label>';
+  let html = avisoHtml;
+  html += '<label>Mes que se va a cobrar</label>';
   html += '<select id="mesSeleccionado" onchange="actualizarValorPago()">';
-  pendientes.forEach(e => {
+  pagables.forEach(e => {
     html += '<option value="' + e.mes + '">' + e.mes + '</option>';
   });
   html += '</select>';
@@ -814,7 +866,12 @@ function renderZonaPago(estados) {
   html += '<div class="total">Total a cobrar: ' + formatoCOP(total) + '</div>';
   html += '</div>';
 
-  html += '<button class="accion" onclick="cobrarCuota()">Cobrar</button>';
+  if (esAdmin) {
+    html += '<button class="accion" onclick="cobrarCuota()">Cobrar</button>';
+  } else {
+    html += '<button class="accion" onclick="cobrarCuota()">Reportar pago</button>';
+    html += '<p class="nota">Este pago quedará pendiente hasta que el administrador confirme que el dinero ingresó.</p>';
+  }
 
   zona.innerHTML = html;
 }
@@ -824,14 +881,21 @@ function actualizarValorPago() {
   // por lo tanto no requiere recálculo adicional al cambiar el mes.
 }
 
+function nuevoId() {
+  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now() + "_" + Math.random().toString(36).slice(2));
+}
+
 function cobrarCuota() {
   const p = propietarioSeleccionado;
   const mes = document.getElementById("mesSeleccionado").value;
   const hoy = fechaHoy();
   const recargo = calcularRecargo(hoy);
   const total = CUOTA_MENSUAL + recargo;
+  const rolActual = (sesionActual() || {}).rol;
+  const estadoRegistro = rolActual === "admin" ? "aprobado" : "pendiente";
 
   const registro = {
+    id: nuevoId(),
     finca: p.finca,
     nombre: p.nombre,
     mes: mes,
@@ -839,15 +903,33 @@ function cobrarCuota() {
     cuota: CUOTA_MENSUAL,
     recargo: recargo,
     total: total,
-    anio: hoy.getFullYear()
+    anio: hoy.getFullYear(),
+    estado: estadoRegistro
   };
   guardarIngresoLocal(registro);
 
   const msj = document.getElementById("mensajeIngresoOk");
   msj.style.display = "block";
-  msj.textContent = "Cuota de " + mes + " registrada para " + p.nombre + " por " + formatoCOP(total) + ".";
+  msj.textContent = estadoRegistro === "aprobado"
+    ? ("Cuota de " + mes + " registrada y confirmada para " + p.nombre + " por " + formatoCOP(total) + ".")
+    : ("Pago de " + mes + " reportado para " + p.nombre + " por " + formatoCOP(total) + ". Queda pendiente de aprobación del administrador.");
 
   renderDetallePropietario();
+  renderLogIngresos();
+  renderTablero();
+}
+
+function aprobarIngreso(id) {
+  if ((sesionActual() || {}).rol !== "admin") return;
+  const lista = leerIngresos();
+  const idx = lista.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  lista[idx].estado = "aprobado";
+  localStorage.setItem(CLAVE_INGRESOS, JSON.stringify(lista));
+
+  if (propietarioSeleccionado && propietarioSeleccionado.finca === lista[idx].finca) {
+    renderDetallePropietario();
+  }
   renderLogIngresos();
   renderTablero();
 }
@@ -859,9 +941,19 @@ function renderLogIngresos() {
     cont.innerHTML = '<p class="nota">Aún no hay cuotas registradas localmente.</p>';
     return;
   }
-  let html = '<table><thead><tr><th>Fecha</th><th>Finca</th><th>Propietario</th><th>Mes</th><th>Total</th></tr></thead><tbody>';
+  const esAdmin = (sesionActual() || {}).rol === "admin";
+  let html = '<table><thead><tr><th>Fecha</th><th>Finca</th><th>Propietario</th><th>Mes</th><th>Total</th><th>Estado</th>' + (esAdmin ? '<th></th>' : '') + '</tr></thead><tbody>';
   lista.forEach(r => {
-    html += '<tr><td>' + r.fecha + '</td><td>' + r.finca + '</td><td>' + r.nombre + '</td><td>' + r.mes + '</td><td>' + formatoCOP(r.total) + '</td></tr>';
+    const estado = r.estado || "aprobado";
+    const claseEstado = estado === "aprobado" ? "tag-aldia" : "tag-moroso";
+    const etiquetaEstado = estado === "aprobado" ? "Aprobado" : "Por aprobar";
+    html += '<tr><td>' + r.fecha + '</td><td>' + r.finca + '</td><td>' + r.nombre + '</td><td>' + r.mes + '</td><td>' + formatoCOP(r.total) + '</td><td class="' + claseEstado + '">' + etiquetaEstado + '</td>';
+    if (esAdmin) {
+      html += estado === "pendiente"
+        ? '<td><button class="btn-aprobar" onclick="aprobarIngreso(\'' + r.id + '\')">Aprobar</button></td>'
+        : '<td></td>';
+    }
+    html += '</tr>';
   });
   html += '</tbody></table>';
   cont.innerHTML = html;
@@ -1076,7 +1168,8 @@ function pagosDeAnio(anio) {
       if (anioReg !== anio) return;
       const p = propietariosAnio.find(x => x.finca === r.finca);
       const yaEnExcel = p && p.meses[r.mes] !== null && p.meses[r.mes] !== undefined;
-      if (!yaEnExcel) {
+      const aprobado = (r.estado || "aprobado") === "aprobado";
+      if (!yaEnExcel && aprobado) {
         pagos.push({ finca: r.finca, nombre: r.nombre, mes: r.mes, cuota: r.cuota, recargo: r.recargo, total: r.total, origen: "local" });
       }
     });
